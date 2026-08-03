@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel Diário — Transição para Go</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#0B0F14;
+    --panel:#121820;
+    --panel-2:#182130;
+    --line:#232E3D;
+    --text:#E6EDF3;
+    --muted:#7C8B99;
+    --accent:#2DD4BF;
+    --accent-dim:#134E4A;
+    --amber:#F5A623;
+    --amber-dim:#4A3510;
+    --danger:#F87171;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Inter',sans-serif; padding:28px 18px 60px;
+    min-height:100vh;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;letter-spacing:.14em;text-transform:uppercase;}
+  h1{font-family:'IBM Plex Mono',monospace;font-size:22px;margin:6px 0 0;font-weight:600;}
+  .streak{
+    font-family:'IBM Plex Mono',monospace;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:10px 16px;text-align:center;min-width:120px;
+  }
+  .streak .n{font-size:26px;color:var(--amber);font-weight:700;display:block;}
+  .streak .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:16px;}
+  .phase-tag{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bg);background:var(--accent);
+    padding:3px 9px;border-radius:5px;font-weight:700;letter-spacing:.04em;margin-bottom:10px;}
+  .day-title{font-size:19px;font-weight:700;margin:0 0 4px;}
+  .day-meta{color:var(--muted);font-size:13px;margin-bottom:16px;font-family:'IBM Plex Mono',monospace;}
+  .field-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 5px;}
+  .field-value{line-height:1.55;font-size:15px;}
+  .resource{display:inline-block;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--amber);background:var(--amber-dim);
+    padding:4px 10px;border-radius:6px;}
+  .question-box{border-left:3px solid var(--accent);padding:10px 14px;background:var(--panel-2);border-radius:0 6px 6px 0;font-style:italic;color:var(--text);}
+
+  .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+  button{font-family:'Inter',sans-serif;font-weight:600;font-size:14px;border-radius:8px;border:1px solid var(--line);
+    padding:10px 16px;cursor:pointer;background:var(--panel-2);color:var(--text);transition:all .15s;}
+  button:hover{border-color:var(--accent);}
+  button.primary{background:var(--accent);color:#04201D;border:none;}
+  button.primary:hover{filter:brightness(1.08);}
+  button.done{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);}
+
+  textarea{
+    width:100%;min-height:90px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+    color:var(--text);font-family:'Inter',sans-serif;font-size:14px;padding:12px;resize:vertical;margin-top:6px;
+  }
+  textarea:focus{outline:none;border-color:var(--accent);}
+
+  .grid-title{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;}
+  .calendar{display:grid;grid-template-columns:repeat(21,1fr);gap:4px;}
+  .cell{
+    aspect-ratio:1;border-radius:3px;background:var(--panel-2);border:1px solid var(--line);cursor:pointer;position:relative;
+  }
+  .cell.today{outline:2px solid var(--amber);outline-offset:1px;}
+  .cell.done{background:var(--accent);border-color:var(--accent);}
+  .cell.future{opacity:.35;}
+  .legend{display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .swatch{width:10px;height:10px;border-radius:2px;display:inline-block;}
+
+  .copy-hint{font-size:12px;color:var(--muted);margin-top:6px;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#04201D;
+    padding:10px 18px;border-radius:8px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;}
+  .toast.show{opacity:1;}
+
+  .peek{margin-top:12px;padding:12px;background:var(--panel-2);border-radius:8px;border:1px solid var(--line);font-size:13px;color:var(--muted);}
+  .empty{color:var(--muted);text-align:center;padding:30px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <div class="eyebrow">Roadmap Go — 28/07 a 20/12/2026</div>
+      <h1>Painel do dia</h1>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button id="exportJsonBtn" style="font-size:13px;padding:8px 12px;" title="Exportar dados para um arquivo JSON">📤 Exportar JSON</button>
+      <button id="importJsonBtn" style="font-size:13px;padding:8px 12px;" title="Importar dados de um arquivo JSON">📥 Importar JSON</button>
+      <input type="file" id="importJsonInput" accept=".json" style="display:none;">
+      <div class="streak">
+        <span class="n" id="streakNum">0</span>
+        <span class="l">dias seguidos</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="dayCard">
+    <!-- preenchido via JS -->
+  </div>
+
+  <div class="card">
+    <div class="field-label">Anotação de hoje (caderno)</div>
+    <textarea id="noteInput" placeholder="O que você aprendeu? O que ficou confuso? Responda a pergunta de autoavaliação aqui."></textarea>
+    <div class="actions">
+      <button class="primary" id="saveNoteBtn">Salvar anotação</button>
+      <button id="markDoneBtn">Marcar dia como concluído</button>
+      <button id="copyPromptBtn">Copiar prompt para explicar em detalhe</button>
+    </div>
+    <div class="copy-hint">O botão de copiar prompt monta a pergunta certa para colar aqui no chat comigo e eu te explicar o dia tim-tim por tim-tim.</div>
+  </div>
+
+  <div class="card">
+    <div class="grid-title">Seu progresso (21 semanas)</div>
+    <div class="calendar" id="calendar"></div>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--accent)"></span> concluído</span>
+      <span><span class="swatch" style="background:var(--panel-2);border:1px solid var(--line)"></span> pendente</span>
+      <span><span class="swatch" style="background:var(--panel-2);opacity:.35"></span> futuro</span>
+      <span><span class="swatch" style="background:var(--panel-2);border:2px solid var(--amber)"></span> hoje</span>
+    </div>
+    <div class="peek" id="peekBox" style="display:none;"></div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const PHASES = {
+  1:"Fundamentos & Reposicionamento",
+  2:"Concorrência",
+  3:"Projeto Âncora Distribuído",
+  4:"Algoritmos, System Design & Comportamental",
+  5:"Prospecção Ativa",
+  6:"Fechamento"
+};
+
+// date, phase, focus, action, resource, question
+const DATA = [
+["2026-07-28",1,"Ambiente + mentalidade","Instale Go e a extensão Go do VSCode. Configure o Cursor/Claude como tutor socrático (peça para explicar erros, não corrigir sozinho). Faça a seção Basics do Tour of Go: pacotes, variáveis, tipos.","go.dev/tour","O que é um pacote em Go e por que main é especial?"],
+["2026-07-29",1,"Tipos e controle de fluxo","Continue o Tour of Go: for, if, switch, defer. Preste atenção especial no defer — não existe em PHP.","go.dev/tour","Escreva de cabeça um for que usa defer para fechar um arquivo."],
+["2026-07-30",1,"Slices vs Arrays","Tour of Go seção Slices + artigo 'Go Slices: usage and internals'. Escreva um programa mostrando a capacidade de um slice dobrando no append.","go.dev/tour + blog.golang.org","Por que um slice pode 'vazar' memória de um array maior?"],
+["2026-07-31",1,"Maps e closures","Tour of Go: maps, function values, closures. Escreva uma função que retorna uma closure (ex: contador).","go.dev/tour","Qual a diferença entre passar uma função e chamar uma função?"],
+["2026-08-01",1,"Reposicionamento de marca (fim de semana, 3-5h)","Reescreva LinkedIn e currículo em inglês. Remova 'PHP Developer'. Novo título: Backend Software Engineer — Relational Databases & Distributed Systems (transitioning to Go). Crie README de perfil no GitHub.","LinkedIn + GitHub","Peça pra IA ler seu LinkedIn e apontar o que soa júnior."],
+["2026-08-02",1,"Setup de estudo contínuo (fim de semana, 3-5h)","Crie conta no Boot.dev, comece a trilha Learn Go (backend path), 2 primeiros capítulos. Crie repo go-journey no GitHub.","boot.dev","3 coisas que mais surpreenderam em Go vs PHP até agora."],
+["2026-08-03",1,"Structs","Boot.dev módulo Structs. Crie 3 structs do seu antigo ERP (Invoice, Customer).","boot.dev","Diferença entre struct em Go e classe em PHP?"],
+["2026-08-04",1,"Métodos e receivers","Boot.dev módulo Methods. Foco: receiver por valor vs ponteiro.","boot.dev","Em que situação um receiver por valor causa bug silencioso?"],
+["2026-08-05",1,"Interfaces implícitas","Boot.dev módulo Interfaces. Comece o exercício URL Shortener do Gophercises.","gophercises.com/exercises/urlshort","Como Go decide que um tipo implementa uma interface?"],
+["2026-08-06",1,"Finalizar URL Shortener","Termine o exercício, adicione armazenamento em arquivo. Commit no GitHub.","gophercises.com","O que mudaria se precisasse trocar arquivo por banco amanhã?"],
+["2026-08-07",1,"Erros idiomáticos","if err != nil, fmt.Errorf com %w, errors.Is/As. Refatore o URL Shortener com erros customizados.","go.dev/doc","Por que Go rejeitou exceptions?"],
+["2026-08-08",1,"net/http + JSON (fim de semana, 3-5h)","Sem framework: API REST de tarefas em memória com net/http e encoding/json.","boot.dev","Desenhe o fluxo de uma requisição HTTP até a resposta JSON."],
+["2026-08-09",1,"Testes básicos (fim de semana, 3-5h)","Leia 2 capítulos de Learn Go With Tests. Escreva seus primeiros testes para a API de tarefas.","quii.gitbook.io/learn-go-with-tests","Liste 3 tópicos que ainda não consegue explicar sem consultar material."],
+["2026-08-10",1,"Roteamento","Estude http.ServeMux (e roteamento nativo do Go 1.22+). Reorganize a API com rotas RESTful.","go.dev/doc","Por que Go não vinha com framework web tipo Laravel?"],
+["2026-08-11",1,"JSON avançado","Struct tags, validação manual de payload, Decoder vs Unmarshal.","go.dev/doc","Quando usar Decoder em vez de Unmarshal?"],
+["2026-08-12",1,"Configuração 12-factor","os.Getenv, .env (godotenv), separação de config por ambiente.","12factor.net","Por que hardcodar config é erro comum de IA sem supervisão?"],
+["2026-08-13",1,"Testes table-driven","Capítulo de Learn Go With Tests sobre table-driven tests. Reescreva os testes da API.","quii.gitbook.io/learn-go-with-tests","O que torna table-driven mais fácil de manter?"],
+["2026-08-14",1,"Revisão e refatoração","Refatore a API: nomes, organização (cmd/, internal/), remova duplicação.","-","3 comentários que um sênior faria revisando este código?"],
+["2026-08-15",1,"Banco de dados real (fim de semana, 3-5h)","Conecte a API ao Postgres via database/sql + pgx/lib/pq. CRUD completo no banco.","pkg.go.dev/database/sql","Compare: como faria essa query no Eloquent vs Go puro?"],
+["2026-08-16",1,"Publicar Projeto #1 (fim de semana, 3-5h)","README em inglês (o quê, por quê, como rodar, decisões). Publique no GitHub e poste no LinkedIn.","github.com","Um recrutador entende o projeto em 30 segundos lendo o README?"],
+["2026-08-17",2,"Goroutines","Boot.dev módulo Concurrency. Rode 10 goroutines simples imprimindo números.","boot.dev","Por que a ordem de impressão muda a cada execução?"],
+["2026-08-18",2,"sync.WaitGroup","Reescreva o exercício anterior usando WaitGroup.","pkg.go.dev/sync","O que acontece se esquecer wg.Done()? Teste e anote."],
+["2026-08-19",2,"Channels sem buffer","Channels unbuffered. Pipeline: uma goroutine produz, outra consome.","go.dev/tour","Por que um channel sem buffer trava até alguém ler?"],
+["2026-08-20",2,"Channels com buffer + select","Channels buffered e select. Adicione buffer e um select com timeout ao pipeline.","go.dev/tour","Quando um buffer pequeno pode esconder um bug de performance?"],
+["2026-08-21",2,"Race conditions","Contador concorrente sem proteção, rode com go run -race, depois corrija com sync.Mutex.","go run -race","Cole o output do -race e explique cada linha."],
+["2026-08-22",2,"Mutex/RWMutex a fundo (fim de semana, 3-5h)","Cache em memória thread-safe (map + RWMutex). Testes com -race.","pkg.go.dev/sync","Por que RWMutex pode ser mais eficiente aqui?"],
+["2026-08-23",2,"Worker Pool (fim de semana, 3-5h)","Implemente um worker pool do zero: N goroutines processando um channel de trabalho.","-","Desenhe o worker pool: onde estão os channels e o WaitGroup?"],
+["2026-08-24",2,"context — cancelamento","Pacote context. Adicione cancelamento manual ao worker pool.","pkg.go.dev/context","O que muda ao adicionar ctx.Done() no select?"],
+["2026-08-25",2,"context — timeout/deadline","WithTimeout e WithDeadline. Simule uma chamada lenta cancelada por timeout.","pkg.go.dev/context","Diferença prática entre WithTimeout e WithDeadline?"],
+["2026-08-26",2,"Fan-in / Fan-out","Implemente fan-out (várias goroutines lendo do mesmo channel) e fan-in (várias escrevendo, um consumidor lê tudo).","go.dev/blog/pipelines","Em que cenário real você usaria fan-in?"],
+["2026-08-27",2,"sync.Once e sync/atomic","sync.Once (inicialização única) e sync/atomic (contadores atômicos).","pkg.go.dev/sync/atomic","Quando atomic é preferível a Mutex?"],
+["2026-08-28",2,"Revisão + refatoração","Refatore o worker pool com context, atomic para métricas, graceful stop.","-","Explique seu worker pool final sem olhar o código."],
+["2026-08-29",2,"Projeto #2: CSV concorrente (fim de semana, 3-5h)","Leia um CSV com centenas de milhares de linhas em paralelo com worker pool. Meça o tempo com e sem concorrência.","-","Quanto mais rápido ficou com concorrência? Por quê?"],
+["2026-08-30",2,"Publicar Projeto #2 (fim de semana, 3-5h)","README com benchmark. Publique no GitHub e LinkedIn. Revise concorrência.","github.com","5 perguntas de entrevista sobre concorrência que mais teme responder?"],
+["2026-08-31",2,"Revisão dirigida (1/5)","Estude a fundo a 1ª das suas 5 perguntas de domingo.","-","Consegue responder sem consultar nada?"],
+["2026-09-01",2,"Revisão dirigida (2/5)","Estude a 2ª pergunta.","-","Consegue responder sem consultar nada?"],
+["2026-09-02",2,"Revisão dirigida (3/5)","Estude a 3ª pergunta.","-","Consegue responder sem consultar nada?"],
+["2026-09-03",2,"Revisão dirigida (4/5 e 5/5)","Estude a 4ª e 5ª pergunta.","-","Consegue responder ambas sem consultar nada?"],
+["2026-09-04",2,"Primeira leva de LeetCode","1 problema Easy (arrays/hashmap) em Go, 30min cronometrados.","leetcode.com","Quanto tempo levou e qual foi a primeira ideia?"],
+["2026-09-05",2,"Networking (fim de semana, 3-5h)","Entre no Discord do Boot.dev e no fórum GolangBridge, apresente-se e comente em 2-3 threads. Assine a newsletter GringoJobs.","forum.golangbridge.org · gringojobs.substack.com","O que aprendeu lendo relatos de quem já conseguiu vaga remota fora?"],
+["2026-09-06",2,"Inglês técnico + revisão (fim de semana, 3-5h)","Grave-se 2 min se apresentando em inglês como Backend Engineer transitioning to Go. Revise a Fase 2 inteira.","-","O que soou mais artificial na gravação?"],
+["2026-09-07",3,"Design da API (spec)","Escreva a especificação OpenAPI/Swagger do sistema (evento-driven) antes de codar.","swagger.io","Por que desenhar antes de codar evita retrabalho?"],
+["2026-09-08",3,"Paginação e filtros","Implemente paginação (cursor ou offset) e filtros nos endpoints de listagem.","-","Onde paginação por offset quebra em escala?"],
+["2026-09-09",3,"Validação e erros padronizados","Formato de erro JSON consistente em toda a API (código, mensagem, campo).","-","O que um erro inconsistente causa para quem consome sua API?"],
+["2026-09-10",3,"Introdução a gRPC","Protocol Buffers e gRPC (conceito): por que menos overhead que JSON/HTTP interno.","grpc.io","Quando gRPC ganha de REST, e quando perde?"],
+["2026-09-11",3,"Primeiro serviço gRPC","Implemente um serviço gRPC simples (ex: verificar saldo de apostas).","grpc.io/docs","O que foi mais estranho comparado a uma rota REST?"],
+["2026-09-12",3,"Arquitetura do projeto âncora (fim de semana, 3-5h)","Diagrama completo no Excalidraw + 2-3 ADRs (ex: por que RabbitMQ e não Kafka aqui).","excalidraw.com","Alguém de fora entenderia o sistema só olhando o diagrama?"],
+["2026-09-13",3,"Esqueleto do repositório (fim de semana, 3-5h)","Estruture cmd/, internal/, pkg/. Configure o módulo, monte o esqueleto dos serviços.","-","O projeto compila e sobe de ponta a ponta, mesmo vazio?"],
+["2026-09-14",3,"RabbitMQ conceitos","Suba RabbitMQ via Docker. Entenda exchanges, filas, routing keys.","rabbitmq.com/tutorials","Diferença entre exchange direct e fanout?"],
+["2026-09-15",3,"Producer em Go","Ao criar uma aposta, publique um evento na fila.","-","O producer trava se o RabbitMQ cair? O que fazer a respeito?"],
+["2026-09-16",3,"Consumer em Go","Consumer que processa o evento (ex: atualizar ranking).","-","O que acontece se o consumer cair no meio do processamento?"],
+["2026-09-17",3,"Graceful shutdown","Capture SIGTERM/SIGINT para desligar sem perder mensagens em processamento.","-","Por que isso importa em deploy/rolling update?"],
+["2026-09-18",3,"Idempotência e dead-letter queue","Garanta que processar a mesma mensagem 2x não duplica efeito. Configure DLQ.","-","O que aconteceria hoje se a mesma mensagem chegasse 2x?"],
+["2026-09-19",3,"Integração completa (fim de semana, 3-5h)","API cria evento → fila → consumer processa → banco atualizado, de ponta a ponta.","-","Grave (texto/vídeo curto) o fluxo funcionando."],
+["2026-09-20",3,"Testes do módulo de mensageria (fim de semana, 3-5h)","Testes para producer e consumer (RabbitMQ de teste via Docker ou mocks).","-","Quais partes foram mais difíceis de testar, e por quê?"],
+["2026-09-21",3,"Table-driven tests avançado","Revise e expanda os testes de toda a API nesse padrão.","-","Qual módulo ainda tem cobertura fraca?"],
+["2026-09-22",3,"Mock de banco de dados","Interfaces + sqlmock/testify para testar a camada de dados sem banco real.","github.com/DATA-DOG/go-sqlmock","Por que mockar torna o teste mais rápido e confiável?"],
+["2026-09-23",3,"Logging estruturado","Troque fmt.Println por log/slog ou zerolog (JSON).","pkg.go.dev/log/slog","Por que logs em JSON ajudam quem opera em produção?"],
+["2026-09-24",3,"Métricas com Prometheus","Exponha /metrics com contadores de requisições, erros e latência.","prometheus.io/docs","O que mediria primeiro se isso estivesse em produção?"],
+["2026-09-25",3,"Tracing distribuído (conceito)","Leia sobre OpenTelemetry: conceito de trace/span.","opentelemetry.io","Por que tracing importa mais com múltiplos serviços?"],
+["2026-09-26",3,"Aprofundar observabilidade (fim de semana, 3-5h)","Implemente 1 trace básico com OpenTelemetry no fluxo API → fila → consumer.","opentelemetry.io/docs","Consegue seguir uma requisição do início ao fim pelos logs/métricas?"],
+["2026-09-27",3,"Revisão geral (fim de semana, 3-5h)","Rode todos os testes, veja cobertura (go test -cover), corrija o frágil.","-","Qual % de cobertura, e onde estão os maiores buracos?"],
+["2026-09-28",3,"Dockerfile multi-stage","Binário Go mínimo, imagem final scratch/distroless.","docs.docker.com","Compare o tamanho com uma imagem PHP típica."],
+["2026-09-29",3,"docker-compose completo","API + Postgres + RabbitMQ com um único docker-compose up.","docs.docker.com/compose","Alguém roda seu projeto do zero só com esse comando?"],
+["2026-09-30",3,"CI com GitHub Actions","Workflow rodando go test e go build a cada push.","docs.github.com/actions","O que acontece se quebrar um teste e der push?"],
+["2026-10-01",3,"Deploy real","Deploy em Fly.io, Railway ou Render (free tier).","fly.io · render.com","O projeto está acessível por URL pública? Anote a URL."],
+["2026-10-02",3,"README final","README definitivo em inglês: problema, arquitetura, decisões, trade-offs, como rodar.","-","Peça pra IA atuar como recrutador cético e apontar falhas."],
+["2026-10-03",3,"Vídeo de apresentação (fim de semana, 3-5h)","Grave 3-5 min mostrando arquitetura e sistema rodando (Loom ou celular).","loom.com","Explica cada decisão em menos de 1 min cada?"],
+["2026-10-04",3,"Publicação e marco (fim de semana, 3-5h)","Tag v1.0 no GitHub. Poste no LinkedIn (inglês) contando a jornada de PHP a sistema distribuído em Go.","github.com","Esse projeto sozinho responde 'o que você sabe fazer em Go'?"],
+["2026-10-05",4,"Arrays/Hashmaps (Easy)","1 problema Easy no LeetCode (ordem NeetCode). 30min resolvendo, 15min explicando em voz alta.","neetcode.io · leetcode.com","Big-O da sua solução: tempo e espaço?"],
+["2026-10-06",4,"Arrays/Hashmaps (Medium)","1 problema Medium do mesmo tema.","leetcode.com","Onde travou, e o que destravou o raciocínio?"],
+["2026-10-07",4,"Two pointers","1 problema Easy/Medium do padrão two pointers.","leetcode.com","Quando o padrão two pointers se aplica?"],
+["2026-10-08",4,"Strings","1 problema Easy/Medium sobre strings.","leetcode.com","Qual truque de Go (ex: strings.Builder) usou ou deveria ter usado?"],
+["2026-10-09",4,"Revisão da semana","Refaça, sem olhar a solução, 1 problema em que travou.","-","Resolveu mais rápido da segunda vez? Por quanto?"],
+["2026-10-10",4,"System Design — fundamentos (fim de semana, 3-5h)","Load balancers, cache (Redis), escalonamento vertical x horizontal. Desenhe como escalaria seu projeto para 1M usuários.","-","Onde seu sistema atual quebraria primeiro em escala?"],
+["2026-10-11",4,"System Design — estudo de caso (fim de semana, 3-5h)","Estude a arquitetura do Uber ou WhatsApp. Compare com seu desenho de sábado.","-","O que os arquitetos reais fizeram diferente do que imaginou?"],
+["2026-10-12",4,"Árvores","1 problema Easy/Medium sobre árvores binárias.","leetcode.com","Sabe implementar BFS e DFS em Go de cabeça?"],
+["2026-10-13",4,"Listas ligadas","1 problema Easy/Medium.","leetcode.com","Qual truque com ponteiros (sua base de C ajuda aqui) usou?"],
+["2026-10-14",4,"Pilhas/Filas","1 problema Easy/Medium.","leetcode.com","Que estrutura nativa do Go usou para simular pilha/fila?"],
+["2026-10-15",4,"Recursão/Backtracking","1 problema Easy/Medium.","leetcode.com","Onde a recursão ficou difícil de rastrear mentalmente?"],
+["2026-10-16",4,"Revisão","Refaça 1 problema difícil da semana sem consultar nada.","-","Está mais rápido para identificar o padrão certo que semana passada?"],
+["2026-10-17",4,"Sharding e replicação (fim de semana, 3-5h)","Replicação Postgres, sharding, CAP theorem. Aplique: como fragmentaria dados de apostas por região?","-","Explique CAP theorem como se fosse para alguém leigo."],
+["2026-10-18",4,"Exercício cronometrado (fim de semana, 3-5h)","Desenhe em 45min o design de um encurtador de URLs em escala, sem consultar nada nos 1ºs 30min.","-","O que esqueceu de considerar até revisar (cache, rate limiting, unicidade)?"],
+["2026-10-19",4,"STAR story #1","Escreva em inglês a história do maior desafio técnico resolvido no ERP (Situação-Tarefa-Ação-Resultado).","-","A história tem resultado mensurável (tempo, dinheiro, bugs evitados)?"],
+["2026-10-20",4,"STAR story #2","História sobre resolução de conflito/liderança (Apple Developer Academy).","-","Contou em menos de 2 min falados?"],
+["2026-10-21",4,"STAR story #3","História sobre uma falha e o aprendizado.","-","Assumiu responsabilidade genuína ou culpou o sistema?"],
+["2026-10-22",4,"STAR stories #4-6","Prazo apertado; discordância resolvida; ownership total de um problema.","-","Tem 5-6 histórias diferentes para não repetir?"],
+["2026-10-23",4,"'Tell me about yourself'","Grave-se respondendo em inglês (2 min). Assista e reescreva o roteiro.","-","O que soou decorado ou hesitante demais?"],
+["2026-10-24",4,"Simulação IA completa (fim de semana, 3-5h)","Peça ao Claude para simular entrevistador técnico + comportamental, 45min em inglês.","-","Quais 3 respostas foram mais fracas, segundo o feedback?"],
+["2026-10-25",4,"Mock interview humano (fim de semana, 3-5h)","Troca de mock interview com alguém do Discord do Boot.dev/GolangBridge.","forum.golangbridge.org","O feedback humano bateu com o que a IA apontou?"],
+["2026-10-26",4,"LeetCode revisão","1 problema Medium (revisão espaçada de temas anteriores).","leetcode.com","Qual tema você ainda erra mais?"],
+["2026-10-27",4,"LeetCode tema fraco","1 problema Medium no tema fraco identificado ontem.","leetcode.com","Melhorou em relação a ontem?"],
+["2026-10-28",4,"gRPC/system design polish","Revise gRPC e desenhe mais um exercício de system design (ex: chat em tempo real).","-","O que mudaria no seu projeto se precisasse de chat em tempo real?"],
+["2026-10-29",4,"Take-home simulado","Implemente uma feature pequena com time-box de 1h, simulando avaliação assíncrona real.","-","Entregaria isso com a qualidade de uma vaga real?"],
+["2026-10-30",4,"Revisão geral da fase","Releia as 6 histórias STAR e ajuste o que ficou fraco.","-","Está confiante para contar qualquer uma sem ler?"],
+["2026-10-31",4,"Lista de empresas-alvo (fim de semana, 3-5h)","Monte lista de 30-40 empresas/vagas: startups YC com Go, remote-first, fintechs.","workatastartup.com · wellfound.com · golangprojects.com","Quais 10 parecem as melhores apostas, e por quê?"],
+["2026-11-01",4,"Preparação final (fim de semana, 3-5h)","Revise currículo/LinkedIn com os aprendizados dos últimos 3 meses. Prepare pitch de 30s.","-","Seu currículo mostra 2 projetos sérios em 10s de leitura?"],
+["2026-11-02",5,"Arc.dev","Crie perfil completo, faça avaliação de comunicação/inglês.","arc.dev","Perfil 100% preenchido, com link do projeto âncora e vídeo?"],
+["2026-11-03",5,"We Work Remotely / RemoteOK / Wellfound","Crie perfil em todas, configure alertas para Go/Golang/Backend.","weworkremotely.com · remoteok.com · wellfound.com","Quantas vagas relevantes já viu hoje?"],
+["2026-11-04",5,"Braintrust / Turing","Complete cadastro nas duas.","usebraintrust.com · turing.com","Quais exigem teste técnico imediato? Anote prazos."],
+["2026-11-05",5,"BEON.tech / Tecla.io / Revelo / Strider","Complete cadastro nas 4.","beon.tech · tecla.io · revelo.com · onstrider.com","Alguma já tem vaga de Go aberta hoje?"],
+["2026-11-06",5,"Planilha de tracking","Monte planilha: Empresa | Data | Canal | Status | Próximo passo | Nota.","Google Sheets/Notion","Tem um lugar único para nunca perder o histórico?"],
+["2026-11-07",5,"Primeira leva de candidaturas (fim de semana, 3-5h)","Aplique para 10 vagas bem escolhidas, personalizando a mensagem citando o projeto âncora.","-","Quais te deixaram mais animado?"],
+["2026-11-08",5,"Outreach frio (fim de semana, 3-5h)","5 mensagens no LinkedIn pedindo 15min de conversa (nunca pedindo vaga direto).","linkedin.com","Quantas respostas já recebeu até domingo à noite?"],
+["2026-11-09",5,"Candidaturas diárias","3-5 candidaturas novas e direcionadas + 1 mensagem de outreach.","-","Quantas hoje?"],
+["2026-11-10",5,"Candidaturas diárias","3-5 candidaturas novas e direcionadas + 1 mensagem de outreach.","-","Quantas hoje?"],
+["2026-11-11",5,"Candidaturas diárias","3-5 candidaturas novas e direcionadas + 1 mensagem de outreach.","-","Quantas hoje?"],
+["2026-11-12",5,"Candidaturas diárias","3-5 candidaturas novas e direcionadas + 1 mensagem de outreach.","-","Quantas hoje?"],
+["2026-11-13",5,"Revisão de respostas","Organize entrevistas agendadas, prepare-se para a próxima.","-","Sabe o stack/produto de cada empresa que respondeu?"],
+["2026-11-14",5,"Nicho: GolangProjects/Bridge/YC (fim de semana, 3-5h)","Vasculhe esses 3 canais de nicho, aplique nas vagas relevantes.","golangprojects.com · forum.golangbridge.org · workatastartup.com","Alguma vaga de nicho parece melhor encaixe que as genéricas?"],
+["2026-11-15",5,"Follow-up (fim de semana, 3-5h)","Reenvie follow-up educado para candidaturas com +7 dias sem resposta.","-","Quantas reativou?"],
+["2026-11-16",5,"Prep entrevista / candidaturas","Se tiver entrevista: estude o stack específico. Se não: continue 3-5 candidaturas/dia.","-","Pesquisou produto, stack e LinkedIn dos entrevistadores?"],
+["2026-11-17",5,"Prep entrevista / candidaturas","Se tiver entrevista: estude o stack específico. Se não: continue 3-5 candidaturas/dia.","-","Idem."],
+["2026-11-18",5,"Prep entrevista / candidaturas","Se tiver entrevista: estude o stack específico. Se não: continue 3-5 candidaturas/dia.","-","Idem."],
+["2026-11-19",5,"Prep entrevista / candidaturas","Se tiver entrevista: estude o stack específico. Se não: continue 3-5 candidaturas/dia.","-","Idem."],
+["2026-11-20",5,"Prep entrevista / candidaturas","Se tiver entrevista: estude o stack específico. Se não: continue 3-5 candidaturas/dia.","-","Idem."],
+["2026-11-21",5,"Mock intensivo (fim de semana, 3-5h)","Simulação completa (técnica + comportamental) com IA ou par humano.","-","O que mudou desde a simulação da semana 12?"],
+["2026-11-22",5,"Diagnóstico de rejeições (fim de semana, 3-5h)","Para cada 'não': o que aconteceu, o que faria diferente.","-","Existe padrão nas rejeições (mesma etapa, mesmo tipo de pergunta)?"],
+["2026-11-23",5,"Continuar processo","Mantenha o ritmo de candidaturas/entrevistas. Ajuste pitch se houver padrão de rejeição.","-","Taxa de resposta melhorou desde a semana 14?"],
+["2026-11-24",5,"Continuar processo","Mantenha o ritmo de candidaturas/entrevistas.","-","Idem."],
+["2026-11-25",5,"Continuar processo","Mantenha o ritmo de candidaturas/entrevistas.","-","Idem."],
+["2026-11-26",5,"Continuar processo","Mantenha o ritmo de candidaturas/entrevistas.","-","Idem."],
+["2026-11-27",5,"Continuar processo","Mantenha o ritmo de candidaturas/entrevistas.","-","Idem."],
+["2026-11-28",5,"Revisão de mês (fim de semana, 3-5h)","Se taxa de resposta baixa: revise portfólio, mensagens, título do LinkedIn.","-","O que, honestamente, precisa mudar?"],
+["2026-11-29",5,"Prep negociação/contratos (fim de semana, 3-5h)","Estude negociação salarial e diferenças entre PJ, CLT internacional e agências de staffing.","-","Sabe qual modelo de contrato prefere, e por quê?"],
+["2026-11-30",6,"Rodadas finais","Preparação específica da rodada final em andamento (deep-dive técnico, system design com o time).","-","Entende exatamente o que essa etapa avalia?"],
+["2026-12-01",6,"Rodadas finais","Preparação específica da rodada final.","-","Idem."],
+["2026-12-02",6,"Rodadas finais","Preparação específica da rodada final.","-","Idem."],
+["2026-12-03",6,"Rodadas finais","Preparação específica da rodada final.","-","Idem."],
+["2026-12-04",6,"Rodadas finais","Preparação específica da rodada final.","-","Idem."],
+["2026-12-05",6,"Pesquisa de mercado salarial (fim de semana, 3-5h)","Pesquise faixas salariais reais (levels.fyi, Glassdoor).","levels.fyi · glassdoor.com","Qual seu número-alvo e seu número mínimo aceitável?"],
+["2026-12-06",6,"Simulação de negociação (fim de semana, 3-5h)","Pratique a negociação salarial em inglês com a IA fazendo o papel do recrutador.","-","Conseguiu pedir mais sem soar agressivo?"],
+["2026-12-07",6,"Negociação e decisão","Conduza negociações reais. Consulte um contador sobre PJ/MEI e recebimento em dólar.","-","Entende as implicações fiscais da oferta?"],
+["2026-12-08",6,"Negociação e decisão","Continue negociações.","-","Idem."],
+["2026-12-09",6,"Negociação e decisão","Continue negociações.","-","Idem."],
+["2026-12-10",6,"Negociação e decisão","Continue negociações.","-","Idem."],
+["2026-12-11",6,"Negociação e decisão","Continue negociações.","-","Idem."],
+["2026-12-12",6,"Comparar ofertas (fim de semana, 3-5h)","Compare não só salário: fuso horário, stack, crescimento, estabilidade.","-","Qual oferta te empolga mais daqui a 2 anos?"],
+["2026-12-13",6,"Decisão final (fim de semana, 3-5h)","Feche a decisão. Se sem oferta ainda: revise o pipeline e reforce candidaturas.","-","Está decidindo com clareza ou com ansiedade?"],
+["2026-12-14",6,"Onboarding / intensificar","Se fechou: prepare ambiente, leia sobre a cultura, monte plano 30-60-90. Se não: intensifique candidaturas.","-","Está entrando com plano ou vai improvisar?"],
+["2026-12-15",6,"Onboarding / intensificar","Continue preparação.","-","Idem."],
+["2026-12-16",6,"Onboarding / intensificar","Continue preparação.","-","Idem."],
+["2026-12-17",6,"Onboarding / intensificar","Continue preparação.","-","Idem."],
+["2026-12-18",6,"Onboarding / intensificar","Continue preparação.","-","Idem."],
+["2026-12-19",6,"Celebração + lições (fim de semana, 3-5h)","Anote as 10 maiores lições de ~5 meses de estudo e prospecção.","-","O que faria diferente se começasse hoje de novo?"],
+["2026-12-20",6,"Metas do próximo ciclo (fim de semana, 3-5h)","Defina metas de janeiro/fevereiro: continuar prospecção ou plano dos primeiros 90 dias na nova vaga.","-","Qual é sua próxima meta concreta?"]
+];
+
+const DATA_MAP = {};
+DATA.forEach(row=>{
+  DATA_MAP[row[0]] = {date:row[0], phase:row[1], foco:row[2], acao:row[3], rec:row[4], pergunta:row[5]};
+});
+
+function todayISO(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function fmtDate(iso){
+  const [y,m,d] = iso.split('-');
+  const dias=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const dt = new Date(y,m-1,d);
+  return dias[dt.getDay()]+' '+d+'/'+m+'/'+y;
+}
+
+let doneMap = {};
+let notesMap = {};
+
+async function loadState(){
+  try {
+    if (window.storage && typeof window.storage.get === 'function') {
+      const r = await window.storage.get('go-roadmap-done');
+      if (r && r.value) doneMap = JSON.parse(r.value);
+      const r2 = await window.storage.get('go-roadmap-notes');
+      if (r2 && r2.value) notesMap = JSON.parse(r2.value);
+    }
+  } catch(e){}
+
+  try {
+    const r = localStorage.getItem('go-roadmap-done');
+    if (r) doneMap = JSON.parse(r);
+  } catch(e){}
+  try {
+    const r2 = localStorage.getItem('go-roadmap-notes');
+    if (r2) notesMap = JSON.parse(r2);
+  } catch(e){}
+
+  // Tenta carregar arquivo de dados local em caso de execução via servidor local
+  try {
+    const res = await fetch('./go-roadmap-dados.json');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.doneMap) doneMap = Object.assign({}, data.doneMap, doneMap);
+      if (data.notesMap) notesMap = Object.assign({}, data.notesMap, notesMap);
+    }
+  } catch(e){}
+}
+
+async function saveDone(){
+  try {
+    if (window.storage && typeof window.storage.set === 'function') {
+      await window.storage.set('go-roadmap-done', JSON.stringify(doneMap));
+    }
+  } catch(e){}
+  try {
+    localStorage.setItem('go-roadmap-done', JSON.stringify(doneMap));
+  } catch(e){}
+}
+
+async function saveNotes(){
+  try {
+    if (window.storage && typeof window.storage.set === 'function') {
+      await window.storage.set('go-roadmap-notes', JSON.stringify(notesMap));
+    }
+  } catch(e){}
+  try {
+    localStorage.setItem('go-roadmap-notes', JSON.stringify(notesMap));
+  } catch(e){}
+}
+
+function exportJSON(){
+  const payload = {
+    doneMap: doneMap,
+    notesMap: notesMap,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'go-roadmap-dados.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Arquivo go-roadmap-dados.json exportado!');
+}
+
+function importJSON(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if(data.doneMap) doneMap = data.doneMap;
+      if(data.notesMap) notesMap = data.notesMap;
+      await saveDone();
+      await saveNotes();
+      document.getElementById('streakNum').textContent = computeStreak();
+      renderDay(currentDate);
+      renderCalendar();
+      toast('Dados importados com sucesso!');
+    } catch(err) {
+      toast('Erro ao ler arquivo JSON.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function computeStreak(){
+  let streak=0;
+  let d = new Date();
+  while(true){
+    const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(doneMap[iso]){ streak++; d.setDate(d.getDate()-1); } else break;
+  }
+  return streak;
+}
+
+let currentDate = todayISO();
+
+function renderDay(iso){
+  currentDate = iso;
+  const entry = DATA_MAP[iso];
+  const card = document.getElementById('dayCard');
+  if(!entry){
+    const before = iso < DATA[0][0];
+    card.innerHTML = `<div class="empty">${before ? 'Ainda não começou — o roadmap inicia em 28/07/2026.' : 'Fora do período do roadmap (ou ele já terminou — parabéns por chegar até aqui!).'}</div>`;
+    document.getElementById('noteInput').value='';
+    return;
+  }
+  card.innerHTML = `
+    <div class="phase-tag">Fase ${entry.phase} · ${PHASES[entry.phase]}</div>
+    <div class="day-title">${entry.foco}</div>
+    <div class="day-meta">${fmtDate(entry.date)}</div>
+    <div class="field-label">O que fazer</div>
+    <div class="field-value">${entry.acao}</div>
+    <div class="field-label">Recurso</div>
+    <div><span class="resource">${entry.rec}</span></div>
+    <div class="field-label">Pergunta de autoavaliação</div>
+    <div class="question-box">${entry.pergunta}</div>
+  `;
+  document.getElementById('noteInput').value = notesMap[iso] || '';
+  document.getElementById('markDoneBtn').classList.toggle('done', !!doneMap[iso]);
+  document.getElementById('markDoneBtn').textContent = doneMap[iso] ? '✓ Concluído' : 'Marcar dia como concluído';
+}
+
+function renderCalendar(){
+  const cal = document.getElementById('calendar');
+  cal.innerHTML = '';
+  const today = todayISO();
+  DATA.forEach(row=>{
+    const iso = row[0];
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    if(iso===today) cell.classList.add('today');
+    if(doneMap[iso]) cell.classList.add('done');
+    if(iso>today) cell.classList.add('future');
+    cell.title = fmtDate(iso)+' — '+row[2];
+    cell.addEventListener('click', ()=>{
+      renderDay(iso);
+      showPeek(iso);
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+    cal.appendChild(cell);
+  });
+}
+
+function showPeek(iso){
+  const box = document.getElementById('peekBox');
+  const entry = DATA_MAP[iso];
+  if(!entry){ box.style.display='none'; return; }
+  box.style.display='block';
+  box.textContent = fmtDate(iso)+' — '+entry.foco+(notesMap[iso] ? ' · nota salva ✓' : '');
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+document.getElementById('saveNoteBtn').addEventListener('click', async ()=>{
+  notesMap[currentDate] = document.getElementById('noteInput').value;
+  await saveNotes();
+  toast('Anotação salva.');
+});
+
+document.getElementById('noteInput').addEventListener('input', async ()=>{
+  notesMap[currentDate] = document.getElementById('noteInput').value;
+  await saveNotes();
+});
+
+document.getElementById('markDoneBtn').addEventListener('click', async ()=>{
+  doneMap[currentDate] = !doneMap[currentDate];
+  await saveDone();
+  document.getElementById('streakNum').textContent = computeStreak();
+  renderDay(currentDate);
+  renderCalendar();
+  toast(doneMap[currentDate] ? 'Dia marcado como concluído!' : 'Marcação removida.');
+});
+
+document.getElementById('copyPromptBtn').addEventListener('click', ()=>{
+  const entry = DATA_MAP[currentDate];
+  let prompt;
+  if(entry){
+    prompt = `Estou no dia ${fmtDate(entry.date)} do meu roadmap de transição para Go (Fase ${entry.phase} — ${PHASES[entry.phase]}). A tarefa de hoje é: "${entry.foco}". Ação prevista: ${entry.acao} Recurso sugerido: ${entry.rec}. Pergunta de autoavaliação do dia: "${entry.pergunta}". Me explique tim-tim por tim-tim o que fazer, com exemplos de código em Go quando fizer sentido, e me faça perguntas ao longo do caminho para checar se eu realmente entendi antes de avançar.`;
+  } else {
+    prompt = `Estou seguindo meu roadmap de transição para Go, mas hoje (${fmtDate(currentDate)}) está fora do período mapeado. Me ajude a decidir o que revisar ou adiantar.`;
+  }
+  navigator.clipboard.writeText(prompt).then(()=>toast('Prompt copiado! Cole no chat comigo.'))
+    .catch(()=>toast('Não foi possível copiar automaticamente — selecione o texto manualmente.'));
+});
+
+document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
+document.getElementById('importJsonBtn').addEventListener('click', ()=>{
+  document.getElementById('importJsonInput').click();
+});
+document.getElementById('importJsonInput').addEventListener('change', (e)=>{
+  if(e.target.files && e.target.files[0]){
+    importJSON(e.target.files[0]);
+    e.target.value = '';
+  }
+});
+
+(async function init(){
+  await loadState();
+  document.getElementById('streakNum').textContent = computeStreak();
+  renderDay(todayISO());
+  renderCalendar();
+})();
+</script>
+</body>
+</html>
