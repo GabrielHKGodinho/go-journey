@@ -3,13 +3,18 @@
     "2026-07-28": true,
     "2026-07-29": true,
     "2026-07-30": true,
-    "2026-07-31": true
+    "2026-07-31": true,
+    "2026-08-01": true,
+    "2026-08-02": true,
+    "2026-08-03": true
   },
   "notesMap": {
     "2026-07-28": "\"A package is Go's general unit of code organization — every file belongs to one. Most packages become reusable libraries that other files import. main is the exception: instead of being importable, it compiles into the actual executable — it's the entry point of the program.\"\n\npackage main\nimport (\"fmt\", \"math/rand\")\n\nmath.Pi\n\nfunc swap(x, y int) (w, z string) {\n      w = \"hello\"\n      return\n}\n\nvar i, j = 1, 2\nfunc(){\n   i := 3\n}",
     "2026-07-29": "defer stacks a call to run only when the surrounding function returns, LIFO order. The idiomatic pattern is: open a resource, check the error, and immediately follow with the defer that closes it — that guarantees cleanup no matter how many return paths the function has\n\nnao existe while\n\nif valor, ok := algumMapa[\"chave\"]; ok {}\n\ndefer file.Close()\n",
     "2026-07-30": "A slice holds a pointer into a backing array, plus len and cap. When you slice a large array/slice, that pointer still points inside the big array — so even though the small slice only 'sees' a few elements, the whole backing array stays pinned in memory as long as that slice is alive, since the garbage collector can't free something still referenced. That's the leak: actual memory usage is much bigger than len suggests.\n\n\ns := make([]int, 0)\n\tfor i := 0; i < 10; i++ {\n\t\ts = append(s, i)\n\t\tfmt.Printf(\"len=%d cap=%d\\n\", len(s), cap(s))\n\t}",
-    "2026-07-31": "When a closure references a variable from its enclosing scope, Go's escape analysis detects that and allocates the variable on the heap instead of the stack. It's only garbage-collected once there's no live reference to it left — typically when the closure using it also goes out of scope\n\nmaps\nidade := make(map[string]int)\nvalor, ok := idade[\"Pedro\"]\n\nfunction values\nfunc quadrado(x int) int{...}\nvar operacao func(int) int = quadrado\nfmt.Println(quadrado(5))\n\nfunction closure\nfunc contador() func() int {\n   cont := 0\n   return func() int {\n      cont++\n      return cont\n   }\n}\nproximo := contador()\nfmt.Println(proximo()) //1"
+    "2026-07-31": "When a closure references a variable from its enclosing scope, Go's escape analysis detects that and allocates the variable on the heap instead of the stack. It's only garbage-collected once there's no live reference to it left — typically when the closure using it also goes out of scope\n\nmaps\nidade := make(map[string]int)\nvalor, ok := idade[\"Pedro\"]\n\nfunction values\nfunc quadrado(x int) int{...}\nvar operacao func(int) int = quadrado\nfmt.Println(quadrado(5))\n\nfunction closure\nfunc contador() func() int {\n   cont := 0\n   return func() int {\n      cont++\n      return cont\n   }\n}\nproximo := contador()\nfmt.Println(proximo()) //1",
+    "2026-08-02": "1. Nao tem while\n2. declarar variavel junto com if\n3. defer",
+    "2026-08-03": "Go doesn't have classes or inheritance — it uses composition and interfaces to achieve the same encapsulation and polymorphism goals. A struct only declares data; methods are attached externally via a receiver, not inside the type definition. And unlike a PHP object (passed by reference), a struct is passed by value by default — assigning it or passing it as an argument creates a copy, unless you use a pointer\n\nComo funciona controle de acesso/visibilidade em Go?\nIn Go, visibility doesn't use keywords like public/private — it's determined by the first letter of the identifier. Uppercase means exported, visible outside the package; lowercase means unexported, only accessible within the same package. This applies equally to structs, fields, functions, and variables\n\nPor que módulos em Go usam nomes tipo github.com/usuario/repo?\nThe module name acts as a globally unique namespace, usually based on the Git repository path. This avoids naming collisions between different people's modules, and it means the module is already ready to be imported by others via go get, even if it's only used locally today."
   },
-  "exportedAt": "2026-08-02T02:14:22.486Z"
+  "exportedAt": "2026-08-04T02:59:51.773Z"
 }
