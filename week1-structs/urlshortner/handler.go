@@ -1,13 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+
+	"gopkg.in/yaml.v3"
 )
 
-type godoHandler struct{}
-
-func (g *godoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
+type urlEntry struct {
+	Path string `yaml:"path"`
+	URL  string `yaml:"url"`
 }
 
 // MapHandler will return an http.HandlerFunc (which also
@@ -17,8 +19,14 @@ func (g *godoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // If the path is not provided in the map, then the fallback
 // http.Handler will be called instead.
 func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.HandlerFunc {
-	//	TODO: Implement this...
-	return nil
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.URL.Path)
+		if url, ok := pathsToUrls[r.URL.Path]; ok {
+			http.Redirect(w, r, url, http.StatusFound)
+		} else {
+			fallback.ServeHTTP(w, r)
+		}
+	}
 }
 
 // YAMLHandler will parse the provided YAML and then return
@@ -38,6 +46,18 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 // See MapHandler to create a similar http.HandlerFunc via
 // a mapping of paths to urls.
 func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
-	// TODO: Implement this...
-	return nil, nil
+	var entries []urlEntry
+
+	if err := yaml.Unmarshal(yml, &entries); err != nil {
+		return nil, err
+	}
+
+	pathToUrl := make(map[string]string)
+	for _, url := range entries {
+		pathToUrl[url.Path] = url.URL
+	}
+
+	fmt.Println(pathToUrl)
+
+	return MapHandler(pathToUrl, fallback), nil
 }
