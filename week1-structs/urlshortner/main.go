@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 )
 
 func main() {
@@ -30,12 +29,9 @@ func main() {
 	// 	panic(err)
 	// }
 
-	yamlFile, err := os.ReadFile("urls.yaml")
-	if err != nil {
-		log.Fatal(err)
-	}
+	yamlPath := "./urls.yaml"
 
-	yamlHandler, err := YAMLHandler(yamlFile, mapHandler)
+	yamlHandler, err := YAMLHandler(yamlPath, mapHandler)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"gopkg.in/yaml.v3"
 )
@@ -45,19 +46,21 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 //
 // See MapHandler to create a similar http.HandlerFunc via
 // a mapping of paths to urls.
-func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
+func YAMLHandler(caminhoArquivo string, fallback http.Handler) (http.HandlerFunc, error) {
+	yamlBytes, err := os.ReadFile(caminhoArquivo)
+	if err != nil {
+		return nil, fmt.Errorf("lendo arquivo de configuração %s: %w", caminhoArquivo, err)
+	}
+
 	var entries []urlEntry
-
-	if err := yaml.Unmarshal(yml, &entries); err != nil {
-		return nil, err
+	if err := yaml.Unmarshal(yamlBytes, &entries); err != nil {
+		return nil, fmt.Errorf("parseando YAML de %s: %w", caminhoArquivo, err)
 	}
 
-	pathToUrl := make(map[string]string)
-	for _, url := range entries {
-		pathToUrl[url.Path] = url.URL
+	pathsToUrls := make(map[string]string)
+	for _, entry := range entries {
+		pathsToUrls[entry.Path] = entry.URL
 	}
 
-	fmt.Println(pathToUrl)
-
-	return MapHandler(pathToUrl, fallback), nil
+	return MapHandler(pathsToUrls, fallback), nil
 }
