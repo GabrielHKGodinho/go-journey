@@ -64,3 +64,27 @@ func TestCreateTask(t *testing.T) {
 		t.Errorf("expected 1 task stored, got %d", len(tasks))
 	}
 }
+
+func TestValidateTask(t *testing.T) {
+	tests := []struct {
+		name    string
+		task    Task
+		wantErr bool
+	}{
+		{name: "valid task", task: Task{Title: "Learn Go"}, wantErr: false},
+		{name: "empty title", task: Task{Title: ""}, wantErr: true},
+		{name: "whitespace only title", task: Task{Title: "   "}, wantErr: true},
+		{name: "title too long", task: Task{Title: strings.Repeat("a", 201)}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validarTask(tt.task)
+
+			gotErr := err != nil
+			if gotErr != tt.wantErr {
+				t.Errorf("validarTask(%+v): got error = %v, wantErr = %v", tt.task, gotErr, tt.wantErr)
+			}
+		})
+	}
+}

@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 )
 
 func listarTasks(w http.ResponseWriter, r *http.Request) {
@@ -18,6 +20,11 @@ func criarTask(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&novaTask); err != nil {
 		http.Error(w, fmt.Sprintf("corpo inválido: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if err := validarTask(novaTask); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -92,4 +99,16 @@ func excluirTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Error(w, "task não encontrada", http.StatusNotFound)
+}
+
+func validarTask(t Task) error {
+	if strings.TrimSpace(t.Title) == "" {
+		return errors.New("title não pode ser vazio")
+	}
+
+	if len(t.Title) > 200 {
+		return errors.New("title não pode ter mais de 200 caracteres")
+	}
+
+	return nil
 }
