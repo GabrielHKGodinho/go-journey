@@ -1,4 +1,4 @@
-package main
+package tasks
 
 type Task struct {
 	ID    int    `json:"id"`
