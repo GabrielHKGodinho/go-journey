@@ -2,17 +2,22 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"sync"
 )
 
 func main() {
+	var wg sync.WaitGroup
+
 	for i := 0; i < 10; i++ {
-		go printNumber(i)
+		wg.Add(1)
+		go printNumber(i, &wg)
 	}
 
-	time.Sleep(100 * time.Millisecond) // vou explicar essa linha logo abaixo
+	wg.Wait()
+	fmt.Println("all goroutines finished")
 }
 
-func printNumber(n int) {
+func printNumber(n int, wg *sync.WaitGroup) {
+	// defer wg.Done()
 	fmt.Println(n)
 }
