@@ -1,0 +1,18 @@
+# subprojetos que têm repositório Git próprio, não devem ser
+# rastreados aqui dentro
+week2-http/tasks-api/
+
+# arquivos de configuração local — nunca versionar, mesmo em
+# exercícios pequenos que tenham seu próprio .env
+.env
+
+# binários compilados (qualquer exercício que gerar um via go build)
+*.exe
+*.dll
+*.so
+*.dylib
+
+# arquivos de IDE/SO
+.DS_Store
+.vscode/
+*.swp
