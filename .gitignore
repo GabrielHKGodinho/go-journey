@@ -1,6 +1,7 @@
 # subprojetos que têm repositório Git próprio, não devem ser
 # rastreados aqui dentro
 week2-http/tasks-api/
+week3-concurrency/csv-processor/
 
 # arquivos de configuração local — nunca versionar, mesmo em
 # exercícios pequenos que tenham seu próprio .env
