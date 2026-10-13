@@ -2,148 +2,295 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Painel Diário — Transição para Go</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel Go</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
-
   :root{
-    --bg:#0B0F14;
-    --panel:#121820;
-    --panel-2:#182130;
-    --line:#232E3D;
-    --text:#E6EDF3;
-    --muted:#7C8B99;
-    --accent:#2DD4BF;
-    --accent-dim:#134E4A;
-    --amber:#F5A623;
-    --amber-dim:#4A3510;
-    --danger:#F87171;
-    --radius:10px;
+    --bg:#0E1A2B; --surface:#15243A; --surface-2:#1C2E48; --line:#2A3F5E;
+    --text:#E8EEF6; --muted:#8DA2BE; --accent:#00ADD8; --on-accent:#03202A;
+    --note:#F2C94C; --note-bg:rgba(242,201,76,.08);
+    --ok:#5DD39E; --bad:#F2777A;
+    --p1:#7FB3FF; --p2:#B79CFF; --p3:#FF8FB1; --p4:#FFC46B; --p5:#00ADD8; --p6:#FF9F6B; --p7:#5DD39E;
+    --on-phase:#0B1424; --radius-lg:14px; --radius-sm:7px;
+    --sans:'Instrument Sans',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#F3F6FA; --surface:#FFFFFF; --surface-2:#EDF2F8; --line:#D5DEE9;
+      --text:#13233A; --muted:#5A6E88; --accent:#007D9C; --on-accent:#FFFFFF;
+      --note:#9A6B00; --note-bg:rgba(183,134,11,.08);
+      --ok:#1E8A5A; --bad:#C2413F;
+      --on-phase:#FFFFFF; --p1:#3B7DDB; --p2:#7C5CD6; --p3:#D4497A; --p4:#C98A12; --p5:#007D9C; --p6:#D56A2E; --p7:#1E8A5A;
+    }
   }
   *{box-sizing:border-box;}
-  body{
-    margin:0; background:var(--bg); color:var(--text);
-    font-family:'Inter',sans-serif; padding:28px 18px 60px;
-    min-height:100vh;
-  }
-  .wrap{max-width:920px;margin:0 auto;}
-  .top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
-  .eyebrow{font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;letter-spacing:.14em;text-transform:uppercase;}
-  h1{font-family:'IBM Plex Mono',monospace;font-size:22px;margin:6px 0 0;font-weight:600;}
-  .streak{
-    font-family:'IBM Plex Mono',monospace;background:var(--panel);border:1px solid var(--line);
-    border-radius:var(--radius);padding:10px 16px;text-align:center;min-width:120px;
-  }
-  .streak .n{font-size:26px;color:var(--amber);font-weight:700;display:block;}
-  .streak .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+  html{-webkit-text-size-adjust:100%;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 16px 72px;}
+  button,input,textarea{font:inherit;color:inherit;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  @media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important;} }
 
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:16px;}
-  .phase-tag{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bg);background:var(--accent);
-    padding:3px 9px;border-radius:5px;font-weight:700;letter-spacing:.04em;margin-bottom:10px;}
-  .day-title{font-size:19px;font-weight:700;margin:0 0 4px;}
-  .day-meta{color:var(--muted);font-size:13px;margin-bottom:16px;font-family:'IBM Plex Mono',monospace;}
-  .field-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 5px;}
-  .field-value{line-height:1.55;font-size:15px;}
-  .resource{display:inline-block;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--amber);background:var(--amber-dim);
-    padding:4px 10px;border-radius:6px;}
-  .question-box{border-left:3px solid var(--accent);padding:10px 14px;background:var(--panel-2);border-radius:0 6px 6px 0;font-style:italic;color:var(--text);}
+  /* Header + journey track */
+  .head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-bottom:20px;}
+  .head h1{font-size:26px;line-height:1.15;margin:0;font-weight:700;letter-spacing:-.01em;}
+  .head .sub{color:var(--muted);margin-top:4px;}
+  .head .tools{display:flex;gap:8px;flex-wrap:wrap;}
 
-  .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
-  button{font-family:'Inter',sans-serif;font-weight:600;font-size:14px;border-radius:8px;border:1px solid var(--line);
-    padding:10px 16px;cursor:pointer;background:var(--panel-2);color:var(--text);transition:all .15s;}
-  button:hover{border-color:var(--accent);}
-  button.primary{background:var(--accent);color:#04201D;border:none;}
-  button.primary:hover{filter:brightness(1.08);}
-  button.done{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);}
+  .journey{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:22px 22px 18px;margin-bottom:18px;}
+  .journey-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+  .journey-top .big{font-size:40px;font-weight:700;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
+  .journey-top .big small{font-size:15px;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:6px;}
+  .facts{display:flex;gap:22px;flex-wrap:wrap;color:var(--muted);font-size:14px;}
+  .facts b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;}
+  .facts .late b{color:var(--bad);}
+  .track{position:relative;height:56px;}
+  .track-bar{position:absolute;left:0;right:0;top:18px;height:14px;display:flex;border-radius:999px;overflow:hidden;background:var(--surface-2);}
+  .seg{position:relative;height:100%;border-right:2px solid var(--surface);}
+  .seg:last-child{border-right:0;}
+  .seg .fill{position:absolute;inset:0 auto 0 0;background:var(--c);}
+  .seg .rest{position:absolute;inset:0;background:var(--c);opacity:.18;}
+  .seg button{position:absolute;inset:-6px 0;background:transparent;border:0;cursor:pointer;padding:0;}
+  .flag{position:absolute;top:2px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none;}
+  .flag i{width:2px;height:40px;background:var(--text);opacity:.55;}
+  .flag span{font-size:11px;color:var(--muted);white-space:nowrap;margin-top:2px;}
+  .flag.goal i{background:var(--note);opacity:1;}
+  .flag.goal span{color:var(--note);font-weight:600;}
+  .flag.pass i{background:var(--ok);opacity:1;}
+  .flag.fail i{background:var(--bad);opacity:1;}
+  .here{position:absolute;top:8px;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid var(--text);}
+  .phase-names{display:flex;margin-top:4px;}
+  .phase-names div{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;}
+  .phase-names div.on{color:var(--text);font-weight:600;}
 
-  textarea{
-    width:100%;min-height:90px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
-    color:var(--text);font-family:'Inter',sans-serif;font-size:14px;padding:12px;resize:vertical;margin-top:6px;
-  }
+  /* Day navigation */
+  .daynav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .daynav .date{font-size:18px;font-weight:600;min-width:170px;text-align:center;font-variant-numeric:tabular-nums;}
+  .daynav .spacer{flex:1;}
+  .btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:8px 13px;cursor:pointer;font-size:14px;font-weight:500;line-height:1.2;}
+  .btn:hover{border-color:var(--accent);}
+  .btn.icon{padding:8px 11px;font-size:16px;}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600;}
+  .btn.done{background:transparent;border-color:var(--ok);color:var(--ok);font-weight:600;}
+  .btn.small{padding:5px 9px;font-size:13px;}
+
+  /* Main grid */
+  .grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;align-items:start;}
+  .grid.lower{grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:18px;}
+  @media (max-width:820px){ .grid,.grid.lower{grid-template-columns:minmax(0,1fr);} }
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px;}
+  .panel h2{font-size:16px;margin:0 0 12px;font-weight:600;}
+  .panel .hint{color:var(--muted);font-size:13px;}
+
+  .day{border-top:4px solid var(--pc,var(--accent));}
+  .day-head{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;border-radius:999px;padding:3px 10px;}
+  .chip.phase{background:var(--pc);color:var(--on-phase);}
+  .chip.fmt{border:1px solid var(--line);color:var(--muted);font-weight:500;}
+  .day h3{font-size:22px;line-height:1.25;margin:4px 0 14px;font-weight:700;letter-spacing:-.01em;}
+  .block{margin:0 0 14px;}
+  .block .lbl{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:3px;}
+  .block p{margin:0;}
+  .blocks2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  @media (max-width:560px){ .blocks2{grid-template-columns:1fr;} }
+  .blocks2 .block{background:var(--surface-2);border-radius:10px;padding:12px 14px;margin:0;}
+  .res{display:flex;flex-wrap:wrap;gap:6px;}
+  .res a,.res span{font-family:var(--mono);font-size:12.5px;padding:3px 8px;border-radius:6px;background:var(--surface-2);color:var(--text);text-decoration:none;border:1px solid var(--line);}
+  .res a:hover{border-color:var(--accent);}
+  .question{border-left:3px solid var(--note);background:var(--note-bg);padding:11px 14px;border-radius:0 10px 10px 0;margin-top:4px;}
+  .question .lbl{color:var(--note);}
+  .day-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+  .empty{color:var(--muted);padding:24px 0;text-align:center;}
+
+  textarea{width:100%;min-height:300px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;resize:vertical;line-height:1.6;}
   textarea:focus{outline:none;border-color:var(--accent);}
+  .note-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:13px;}
+  .saved{color:var(--ok);}
 
-  .grid-title{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;}
-  .calendar{display:grid;grid-template-columns:repeat(21,1fr);gap:4px;}
-  .cell{
-    aspect-ratio:1;border-radius:3px;background:var(--panel-2);border:1px solid var(--line);cursor:pointer;position:relative;
+  /* Funnel */
+  .counters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+  .counter{background:var(--surface-2);border-radius:10px;padding:10px 12px;}
+  .counter .lbl{font-size:12.5px;color:var(--muted);}
+  .counter .row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;}
+  .counter .n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .counter .pm{display:flex;gap:4px;}
+  .totals{display:grid;grid-template-columns:auto repeat(3,1fr);gap:4px 10px;font-size:13.5px;font-variant-numeric:tabular-nums;}
+  .totals .h{color:var(--muted);font-size:12.5px;}
+  .bars{display:flex;align-items:flex-end;gap:5px;height:70px;margin-top:14px;}
+  .bars div{flex:1;background:var(--accent);opacity:.85;border-radius:3px 3px 0 0;min-height:2px;position:relative;}
+  .bars div.zero{opacity:.2;}
+  .bars-x{display:flex;gap:5px;margin-top:4px;}
+  .bars-x span{flex:1;font-size:10.5px;color:var(--muted);text-align:center;}
+
+  /* Checkpoints */
+  .cp{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:12px 0;border-top:1px solid var(--line);}
+  .cp:first-of-type{border-top:0;padding-top:2px;}
+  .cp .when{font-variant-numeric:tabular-nums;font-weight:600;}
+  .cp .left{color:var(--muted);font-size:13px;}
+  .cp .crit{font-weight:500;}
+  .cp .fail{color:var(--muted);font-size:13px;}
+  .cp .st{display:flex;gap:6px;margin-top:6px;}
+  .cp .st .btn.on-pass{border-color:var(--ok);color:var(--ok);}
+  .cp .st .btn.on-fail{border-color:var(--bad);color:var(--bad);}
+
+  /* Extras + search */
+  .add{display:flex;gap:8px;margin-bottom:10px;}
+  .search input{width:100%;}
+  .add input,.search input{flex:1;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 11px;min-width:0;}
+  .add input:focus,.search input:focus{outline:none;border-color:var(--accent);}
+  ul.extras{list-style:none;margin:0;padding:0;}
+  ul.extras li{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--line);}
+  ul.extras li:first-child{border-top:0;}
+  ul.extras li.done span{text-decoration:line-through;color:var(--muted);}
+  ul.extras li span{flex:1;}
+  ul.extras input{margin-top:5px;accent-color:var(--accent);}
+  .x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;}
+  .x:hover{color:var(--bad);}
+  .results{margin-top:10px;max-height:340px;overflow:auto;}
+  .result{display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:9px 2px;cursor:pointer;}
+  .result:hover .rd{color:var(--accent);}
+  .result .rd{font-weight:600;font-size:13.5px;}
+  .result .rs{color:var(--muted);font-size:13px;}
+  .result mark{background:var(--note-bg);color:var(--note);border-radius:3px;padding:0 2px;}
+
+  /* Calendar */
+  .months{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px 20px;}
+  .month .mname{font-weight:600;margin-bottom:6px;}
+  .wk,.mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+  .wk span{font-size:10.5px;color:var(--muted);text-align:center;}
+  .cell{aspect-ratio:1;border-radius:5px;border:0;padding:0;font-size:11px;font-variant-numeric:tabular-nums;cursor:pointer;position:relative;background:transparent;color:var(--muted);}
+  .cell.in{background:color-mix(in srgb, var(--c) 20%, transparent);color:var(--text);}
+  .cell.in.ok{background:var(--c);color:var(--on-phase);font-weight:600;}
+  .cell.today{box-shadow:0 0 0 2px var(--text);}
+  .cell.sel{box-shadow:0 0 0 2px var(--accent);}
+  .cell.has-note::after{content:"";position:absolute;right:3px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--note);}
+  .cell.out{cursor:default;}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:14px;font-size:12.5px;color:var(--muted);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+  @media (max-width:600px){
+    .phase-names{display:none;}
+    .flag span{display:none;}
+    .flag.goal span{display:block;}
+    .journey-top .big{font-size:32px;}
+    .months{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+    .cell{font-size:10px;border-radius:4px;}
+    .daynav .date{min-width:0;font-size:16px;}
   }
-  .cell.today{outline:2px solid var(--amber);outline-offset:1px;}
-  .cell.done{background:var(--accent);border-color:var(--accent);}
-  .cell.future{opacity:.35;}
-  .legend{display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;flex-wrap:wrap;}
-  .legend span{display:inline-flex;align-items:center;gap:5px;}
-  .swatch{width:10px;height:10px;border-radius:2px;display:inline-block;}
-
-  .copy-hint{font-size:12px;color:var(--muted);margin-top:6px;}
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#04201D;
-    padding:10px 18px;border-radius:8px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;}
-  .toast.show{opacity:1;}
-
-  .peek{margin-top:12px;padding:12px;background:var(--panel-2);border-radius:8px;border:1px solid var(--line);font-size:13px;color:var(--muted);}
-  .empty{color:var(--muted);text-align:center;padding:30px 0;}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--text);color:var(--bg);padding:9px 16px;border-radius:9px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:10;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div class="top">
+  <header class="head">
     <div>
-      <div class="eyebrow">Roadmap Go — 28/07 a 20/12/2026</div>
-      <h1>Painel do dia</h1>
+      <h1>Painel Go</h1>
+      <div class="sub">De 28/07/2026 até a oferta em 31/03/2027</div>
     </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-      <button id="exportJsonBtn" style="font-size:13px;padding:8px 12px;" title="Exportar dados para um arquivo JSON">📤 Exportar JSON</button>
-      <button id="importJsonBtn" style="font-size:13px;padding:8px 12px;" title="Importar dados de um arquivo JSON">📥 Importar JSON</button>
-      <input type="file" id="importJsonInput" accept=".json" style="display:none;">
-      <div class="streak">
-        <span class="n" id="streakNum">0</span>
-        <span class="l">dias seguidos</span>
-      </div>
+    <div class="tools">
+      <button class="btn small" id="exportJsonBtn" title="Baixar go-roadmap-dados.json com tudo o que está salvo">Exportar dados</button>
+      <button class="btn small" id="importJsonBtn" title="Carregar um go-roadmap-dados.json">Importar dados</button>
+      <input type="file" id="importJsonInput" accept=".json,application/json" hidden>
     </div>
+  </header>
+
+  <section class="journey" aria-label="Progresso da jornada">
+    <div class="journey-top">
+      <div class="big" id="pct">0%<small>do caminho</small></div>
+      <div class="facts" id="facts"></div>
+    </div>
+    <div class="track" id="track"></div>
+    <div class="phase-names" id="phaseNames"></div>
+  </section>
+
+  <nav class="daynav" aria-label="Navegar entre dias">
+    <button class="btn icon" id="prevBtn" title="Dia anterior (seta ←)" aria-label="Dia anterior">‹</button>
+    <div class="date" id="navDate" aria-live="polite"></div>
+    <button class="btn icon" id="nextBtn" title="Próximo dia (seta →)" aria-label="Próximo dia">›</button>
+    <div class="spacer"></div>
+    <button class="btn small" id="pendingBtn">Próximo pendente</button>
+    <button class="btn small" id="todayBtn">Hoje</button>
+  </nav>
+
+  <div class="grid">
+    <article class="panel day" id="dayCard"></article>
+    <section class="panel" aria-labelledby="noteTitle">
+      <h2 id="noteTitle">Caderno do dia</h2>
+      <label class="sr" for="noteInput">Anotação do dia</label>
+      <textarea id="noteInput" placeholder="O que você aprendeu, o que ficou confuso e a resposta da pergunta de autoavaliação."></textarea>
+      <div class="note-foot"><span id="noteCount">0 caracteres</span><span id="noteStatus"></span></div>
+    </section>
   </div>
 
-  <div class="card" id="dayCard">
-    <!-- preenchido via JS -->
+  <div class="grid lower">
+    <section class="panel" aria-labelledby="funnelTitle">
+      <h2 id="funnelTitle">Funil de candidaturas</h2>
+      <div id="funnel"></div>
+    </section>
+    <section class="panel" aria-labelledby="cpTitle">
+      <h2 id="cpTitle">Checkpoints</h2>
+      <div id="checkpoints"></div>
+    </section>
   </div>
 
-  <div class="card">
-    <div class="field-label">Anotação de hoje (caderno)</div>
-    <textarea id="noteInput" placeholder="O que você aprendeu? O que ficou confuso? Responda a pergunta de autoavaliação aqui."></textarea>
-    <div class="actions">
-      <button class="primary" id="saveNoteBtn">Salvar anotação</button>
-      <button id="markDoneBtn">Marcar dia como concluído</button>
-      <button id="copyPromptBtn">Copiar prompt para explicar em detalhe</button>
-    </div>
-    <div class="copy-hint">O botão de copiar prompt monta a pergunta certa para colar aqui no chat comigo e eu te explicar o dia tim-tim por tim-tim.</div>
+  <div class="grid lower">
+    <section class="panel" aria-labelledby="extrasTitle">
+      <h2 id="extrasTitle">Extras para o fim de semana</h2>
+      <p class="hint" style="margin:-6px 0 12px">Aprofundamentos que não couberam na 1h30 do dia útil.</p>
+      <form class="add" id="extraForm">
+        <label class="sr" for="extraInput">Novo extra</label>
+        <input id="extraInput" placeholder="Ex.: medir o frame da recursão com debug.SetMaxStack" autocomplete="off">
+        <button class="btn small" type="submit">Adicionar</button>
+      </form>
+      <ul class="extras" id="extrasList"></ul>
+    </section>
+    <section class="panel search" aria-labelledby="searchTitle">
+      <h2 id="searchTitle">Buscar nas anotações</h2>
+      <label class="sr" for="searchInput">Texto para buscar</label>
+      <input id="searchInput" placeholder="Ex.: snapshot, idempotência, Big-O" autocomplete="off">
+      <div class="results" id="results"></div>
+    </section>
   </div>
 
-  <div class="card">
-    <div class="grid-title">Seu progresso (21 semanas)</div>
-    <div class="calendar" id="calendar"></div>
-    <div class="legend">
-      <span><span class="swatch" style="background:var(--accent)"></span> concluído</span>
-      <span><span class="swatch" style="background:var(--panel-2);border:1px solid var(--line)"></span> pendente</span>
-      <span><span class="swatch" style="background:var(--panel-2);opacity:.35"></span> futuro</span>
-      <span><span class="swatch" style="background:var(--panel-2);border:2px solid var(--amber)"></span> hoje</span>
-    </div>
-    <div class="peek" id="peekBox" style="display:none;"></div>
-  </div>
+  <section class="panel" style="margin-top:18px" aria-labelledby="calTitle">
+    <h2 id="calTitle">Calendário</h2>
+    <div class="months" id="months"></div>
+    <div class="legend" id="legend"></div>
+  </section>
 
 </div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status"></div>
 
 <script>
 const PHASES = {
-  1:"Fundamentos & Reposicionamento",
-  2:"Concorrência",
-  3:"Projeto Âncora Distribuído",
-  4:"Algoritmos, System Design & Comportamental",
-  5:"Prospecção Ativa",
-  6:"Fechamento"
+  1:{name:"Fundamentos", full:"Fundamentos & Reposicionamento", color:"var(--p1)"},
+  2:{name:"Concorrência", full:"Concorrência", color:"var(--p2)"},
+  3:{name:"Projeto âncora", full:"Projeto Âncora Distribuído", color:"var(--p3)"},
+  4:{name:"Algoritmos e design", full:"Algoritmos, System Design & Comportamental", color:"var(--p4)"},
+  5:{name:"Candidaturas", full:"Prospecção ativa + estudo", color:"var(--p5)"},
+  6:{name:"Dezembro", full:"Dezembro: processos + estudo", color:"var(--p6)"},
+  7:{name:"Revisão e fechamento", full:"Super revisão, aprofundamento e fechamento", color:"var(--p7)"}
 };
 
-// date, phase, focus, action, resource, question
-const DATA = [
+const FUNNEL_START = "2026-11-02";
+const GOAL_DATE = "2027-03-31";
+
+const CHECKPOINTS = [
+  {id:"cp1", date:"2026-12-15", label:"Checkpoint 1", crit:"Pelo menos 1 triagem marcada.", fail:"Se não passar: revisar currículo, mensagens e canais na mesma semana."},
+  {id:"cp2", date:"2027-01-31", label:"Checkpoint 2", crit:"Algum processo passou da triagem.", fail:"Se não passar: ver onde os processos param (RH ou técnica) e treinar essa etapa."},
+  {id:"cp3", date:"2027-02-28", label:"Checkpoint 3", crit:"Algum processo em etapa final.", fail:"Se não passar: março provavelmente escorrega; ajustar o plano com base nos números."},
+  {id:"goal", date:GOAL_DATE, label:"Meta", crit:"Oferta em mãos até 31/03.", fail:"Se não chegar: seguir buscando empregado, corrigindo o ponto fraco que os checkpoints mostraram."}
+];
+
+// [date, phase, focus, study/action, resource, question, applications-block?]
+const ROWS = [
 ["2026-07-28",1,"Ambiente + mentalidade","Instale Go e a extensão Go do VSCode. Configure o Cursor/Claude como tutor socrático (peça para explicar erros, não corrigir sozinho). Faça a seção Basics do Tour of Go: pacotes, variáveis, tipos.","go.dev/tour","O que é um pacote em Go e por que main é especial?"],
 ["2026-07-29",1,"Tipos e controle de fluxo","Continue o Tour of Go: for, if, switch, defer. Preste atenção especial no defer — não existe em PHP.","go.dev/tour","Escreva de cabeça um for que usa defer para fechar um arquivo."],
 ["2026-07-30",1,"Slices vs Arrays","Tour of Go seção Slices + artigo 'Go Slices: usage and internals'. Escreva um programa mostrando a capacidade de um slice dobrando no append.","go.dev/tour + blog.golang.org","Por que um slice pode 'vazar' memória de um array maior?"],
@@ -222,9 +369,9 @@ const DATA = [
 ["2026-10-11",4,"System Design — estudo de caso (fim de semana, 3-5h)","Estude a arquitetura do Uber ou WhatsApp. Compare com seu desenho de sábado.","-","O que os arquitetos reais fizeram diferente do que imaginou?"],
 ["2026-10-12",4,"Árvores","1 problema Easy/Medium sobre árvores binárias.","leetcode.com","Sabe implementar BFS e DFS em Go de cabeça?"],
 ["2026-10-13",4,"Listas ligadas","1 problema Easy/Medium.","leetcode.com","Qual truque com ponteiros (sua base de C ajuda aqui) usou?"],
-["2026-10-14",4,"Pilhas/Filas","1 problema Easy/Medium.","leetcode.com","Que estrutura nativa do Go usou para simular pilha/fila?"],
+["2026-10-14",4,"Pilhas/Filas","1 problema Easy/Medium + DFS iterativo com pilha (movido de 12/10).","leetcode.com","Que estrutura nativa do Go usou para simular pilha/fila?"],
 ["2026-10-15",4,"Recursão/Backtracking","1 problema Easy/Medium.","leetcode.com","Onde a recursão ficou difícil de rastrear mentalmente?"],
-["2026-10-16",4,"Revisão","Refaça 1 problema difícil da semana sem consultar nada.","-","Está mais rápido para identificar o padrão certo que semana passada?"],
+["2026-10-16",4,"Revisão","Refaça 1 problema difícil da semana sem consultar nada + refazer o 271 Encode and Decode Strings (log de re-resolução).","-","Está mais rápido para identificar o padrão certo que semana passada?"],
 ["2026-10-17",4,"Sharding e replicação (fim de semana, 3-5h)","Replicação Postgres, sharding, CAP theorem. Aplique: como fragmentaria dados de apostas por região?","-","Explique CAP theorem como se fosse para alguém leigo."],
 ["2026-10-18",4,"Exercício cronometrado (fim de semana, 3-5h)","Desenhe em 45min o design de um encurtador de URLs em escala, sem consultar nada nos 1ºs 30min.","-","O que esqueceu de considerar até revisar (cache, rate limiting, unicidade)?"],
 ["2026-10-19",4,"STAR story #1","Escreva em inglês a história do maior desafio técnico resolvido no ERP (Situação-Tarefa-Ação-Resultado).","-","A história tem resultado mensurável (tempo, dinheiro, bugs evitados)?"],
@@ -233,297 +380,496 @@ const DATA = [
 ["2026-10-22",4,"STAR stories #4-6","Prazo apertado; discordância resolvida; ownership total de um problema.","-","Tem 5-6 histórias diferentes para não repetir?"],
 ["2026-10-23",4,"'Tell me about yourself'","Grave-se respondendo em inglês (2 min). Assista e reescreva o roteiro.","-","O que soou decorado ou hesitante demais?"],
 ["2026-10-24",4,"Simulação IA completa (fim de semana, 3-5h)","Peça ao Claude para simular entrevistador técnico + comportamental, 45min em inglês.","-","Quais 3 respostas foram mais fracas, segundo o feedback?"],
-["2026-10-25",4,"Mock interview humano (fim de semana, 3-5h)","Troca de mock interview com alguém do Discord do Boot.dev/GolangBridge.","forum.golangbridge.org","O feedback humano bateu com o que a IA apontou?"],
+["2026-10-25",4,"Mock interview humano (fim de semana, 3-5h)","Troca de mock interview com alguém do Discord do Boot.dev, do Gophers Slack ou do r/golang.","gophers.slack.com · reddit.com/r/golang","O feedback humano bateu com o que a IA apontou?"],
 ["2026-10-26",4,"LeetCode revisão","1 problema Medium (revisão espaçada de temas anteriores).","leetcode.com","Qual tema você ainda erra mais?"],
 ["2026-10-27",4,"LeetCode tema fraco","1 problema Medium no tema fraco identificado ontem.","leetcode.com","Melhorou em relação a ontem?"],
 ["2026-10-28",4,"gRPC/system design polish","Revise gRPC e desenhe mais um exercício de system design (ex: chat em tempo real).","-","O que mudaria no seu projeto se precisasse de chat em tempo real?"],
 ["2026-10-29",4,"Take-home simulado","Implemente uma feature pequena com time-box de 1h, simulando avaliação assíncrona real.","-","Entregaria isso com a qualidade de uma vaga real?"],
 ["2026-10-30",4,"Revisão geral da fase","Releia as 6 histórias STAR e ajuste o que ficou fraco.","-","Está confiante para contar qualquer uma sem ler?"],
-["2026-10-31",4,"Lista de empresas-alvo (fim de semana, 3-5h)","Monte lista de 30-40 empresas/vagas: startups YC com Go, remote-first, fintechs.","workatastartup.com · wellfound.com · golangprojects.com","Quais 10 parecem as melhores apostas, e por quê?"],
+["2026-10-31",4,"Lista de empresas-alvo (fim de semana, 3-5h)","Monte lista de 30-40 empresas/vagas: startups YC com Go, remote-first, fintechs.","workatastartup.com · wellfound.com · golang.cafe","Quais 10 parecem as melhores apostas, e por quê?"],
 ["2026-11-01",4,"Preparação final (fim de semana, 3-5h)","Revise currículo/LinkedIn com os aprendizados dos últimos 3 meses. Prepare pitch de 30s.","-","Seu currículo mostra 2 projetos sérios em 10s de leitura?"],
-["2026-11-02",5,"Arc.dev","Crie perfil completo, faça avaliação de comunicação/inglês.","arc.dev","Perfil 100% preenchido, com link do projeto âncora e vídeo?"],
-["2026-11-03",5,"We Work Remotely / RemoteOK / Wellfound","Crie perfil em todas, configure alertas para Go/Golang/Backend.","weworkremotely.com · remoteok.com · wellfound.com","Quantas vagas relevantes já viu hoje?"],
-["2026-11-04",5,"Braintrust / Turing","Complete cadastro nas duas.","usebraintrust.com · turing.com","Quais exigem teste técnico imediato? Anote prazos."],
-["2026-11-05",5,"BEON.tech / Tecla.io / Revelo / Strider","Complete cadastro nas 4.","beon.tech · tecla.io · revelo.com · onstrider.com","Alguma já tem vaga de Go aberta hoje?"],
-["2026-11-06",5,"Planilha de tracking","Monte planilha: Empresa | Data | Canal | Status | Próximo passo | Nota.","Google Sheets/Notion","Tem um lugar único para nunca perder o histórico?"],
-["2026-11-07",5,"Primeira leva de candidaturas (fim de semana, 3-5h)","Aplique para 10 vagas bem escolhidas, personalizando a mensagem citando o projeto âncora.","-","Quais te deixaram mais animado?"],
-["2026-11-08",5,"Outreach frio (fim de semana, 3-5h)","5 mensagens no LinkedIn pedindo 15min de conversa (nunca pedindo vaga direto).","linkedin.com","Quantas respostas já recebeu até domingo à noite?"],
-["2026-11-09",5,"Candidaturas diárias","3-5 candidaturas novas e direcionadas + 1 mensagem de outreach.","-","Quantas hoje?"],
-["2026-11-10",5,"Candidaturas diárias","3-5 candidaturas novas e direcionadas + 1 mensagem de outreach.","-","Quantas hoje?"],
-["2026-11-11",5,"Candidaturas diárias","3-5 candidaturas novas e direcionadas + 1 mensagem de outreach.","-","Quantas hoje?"],
-["2026-11-12",5,"Candidaturas diárias","3-5 candidaturas novas e direcionadas + 1 mensagem de outreach.","-","Quantas hoje?"],
-["2026-11-13",5,"Revisão de respostas","Organize entrevistas agendadas, prepare-se para a próxima.","-","Sabe o stack/produto de cada empresa que respondeu?"],
-["2026-11-14",5,"Nicho: GolangProjects/Bridge/YC (fim de semana, 3-5h)","Vasculhe esses 3 canais de nicho, aplique nas vagas relevantes.","golangprojects.com · forum.golangbridge.org · workatastartup.com","Alguma vaga de nicho parece melhor encaixe que as genéricas?"],
-["2026-11-15",5,"Follow-up (fim de semana, 3-5h)","Reenvie follow-up educado para candidaturas com +7 dias sem resposta.","-","Quantas reativou?"],
-["2026-11-16",5,"Prep entrevista / candidaturas","Se tiver entrevista: estude o stack específico. Se não: continue 3-5 candidaturas/dia.","-","Pesquisou produto, stack e LinkedIn dos entrevistadores?"],
-["2026-11-17",5,"Prep entrevista / candidaturas","Se tiver entrevista: estude o stack específico. Se não: continue 3-5 candidaturas/dia.","-","Idem."],
-["2026-11-18",5,"Prep entrevista / candidaturas","Se tiver entrevista: estude o stack específico. Se não: continue 3-5 candidaturas/dia.","-","Idem."],
-["2026-11-19",5,"Prep entrevista / candidaturas","Se tiver entrevista: estude o stack específico. Se não: continue 3-5 candidaturas/dia.","-","Idem."],
-["2026-11-20",5,"Prep entrevista / candidaturas","Se tiver entrevista: estude o stack específico. Se não: continue 3-5 candidaturas/dia.","-","Idem."],
-["2026-11-21",5,"Mock intensivo (fim de semana, 3-5h)","Simulação completa (técnica + comportamental) com IA ou par humano.","-","O que mudou desde a simulação da semana 12?"],
-["2026-11-22",5,"Diagnóstico de rejeições (fim de semana, 3-5h)","Para cada 'não': o que aconteceu, o que faria diferente.","-","Existe padrão nas rejeições (mesma etapa, mesmo tipo de pergunta)?"],
-["2026-11-23",5,"Continuar processo","Mantenha o ritmo de candidaturas/entrevistas. Ajuste pitch se houver padrão de rejeição.","-","Taxa de resposta melhorou desde a semana 14?"],
-["2026-11-24",5,"Continuar processo","Mantenha o ritmo de candidaturas/entrevistas.","-","Idem."],
-["2026-11-25",5,"Continuar processo","Mantenha o ritmo de candidaturas/entrevistas.","-","Idem."],
-["2026-11-26",5,"Continuar processo","Mantenha o ritmo de candidaturas/entrevistas.","-","Idem."],
-["2026-11-27",5,"Continuar processo","Mantenha o ritmo de candidaturas/entrevistas.","-","Idem."],
-["2026-11-28",5,"Revisão de mês (fim de semana, 3-5h)","Se taxa de resposta baixa: revise portfólio, mensagens, título do LinkedIn.","-","O que, honestamente, precisa mudar?"],
-["2026-11-29",5,"Prep negociação/contratos (fim de semana, 3-5h)","Estude negociação salarial e diferenças entre PJ, CLT internacional e agências de staffing.","-","Sabe qual modelo de contrato prefere, e por quê?"],
-["2026-11-30",6,"Rodadas finais","Preparação específica da rodada final em andamento (deep-dive técnico, system design com o time).","-","Entende exatamente o que essa etapa avalia?"],
-["2026-12-01",6,"Rodadas finais","Preparação específica da rodada final.","-","Idem."],
-["2026-12-02",6,"Rodadas finais","Preparação específica da rodada final.","-","Idem."],
-["2026-12-03",6,"Rodadas finais","Preparação específica da rodada final.","-","Idem."],
-["2026-12-04",6,"Rodadas finais","Preparação específica da rodada final.","-","Idem."],
-["2026-12-05",6,"Pesquisa de mercado salarial (fim de semana, 3-5h)","Pesquise faixas salariais reais (levels.fyi, Glassdoor).","levels.fyi · glassdoor.com","Qual seu número-alvo e seu número mínimo aceitável?"],
-["2026-12-06",6,"Simulação de negociação (fim de semana, 3-5h)","Pratique a negociação salarial em inglês com a IA fazendo o papel do recrutador.","-","Conseguiu pedir mais sem soar agressivo?"],
-["2026-12-07",6,"Negociação e decisão","Conduza negociações reais. Consulte um contador sobre PJ/MEI e recebimento em dólar.","-","Entende as implicações fiscais da oferta?"],
-["2026-12-08",6,"Negociação e decisão","Continue negociações.","-","Idem."],
-["2026-12-09",6,"Negociação e decisão","Continue negociações.","-","Idem."],
-["2026-12-10",6,"Negociação e decisão","Continue negociações.","-","Idem."],
-["2026-12-11",6,"Negociação e decisão","Continue negociações.","-","Idem."],
-["2026-12-12",6,"Comparar ofertas (fim de semana, 3-5h)","Compare não só salário: fuso horário, stack, crescimento, estabilidade.","-","Qual oferta te empolga mais daqui a 2 anos?"],
-["2026-12-13",6,"Decisão final (fim de semana, 3-5h)","Feche a decisão. Se sem oferta ainda: revise o pipeline e reforce candidaturas.","-","Está decidindo com clareza ou com ansiedade?"],
-["2026-12-14",6,"Onboarding / intensificar","Se fechou: prepare ambiente, leia sobre a cultura, monte plano 30-60-90. Se não: intensifique candidaturas.","-","Está entrando com plano ou vai improvisar?"],
-["2026-12-15",6,"Onboarding / intensificar","Continue preparação.","-","Idem."],
-["2026-12-16",6,"Onboarding / intensificar","Continue preparação.","-","Idem."],
-["2026-12-17",6,"Onboarding / intensificar","Continue preparação.","-","Idem."],
-["2026-12-18",6,"Onboarding / intensificar","Continue preparação.","-","Idem."],
-["2026-12-19",6,"Celebração + lições (fim de semana, 3-5h)","Anote as 10 maiores lições de ~5 meses de estudo e prospecção.","-","O que faria diferente se começasse hoje de novo?"],
-["2026-12-20",6,"Metas do próximo ciclo (fim de semana, 3-5h)","Defina metas de janeiro/fevereiro: continuar prospecção ou plano dos primeiros 90 dias na nova vaga.","-","Qual é sua próxima meta concreta?"]
+// ---- Fase 5: novembro (1h30 = ~45 min candidaturas + ~45 min estudo) ----
+["2026-11-02",5,"Pipeline: Arc.dev + sliding window","Sliding window: fundamentos + LeetCode 121 Best Time to Buy and Sell Stock (Easy).","arc.dev · leetcode.com/problems/best-time-to-buy-and-sell-stock","Por que uma janela evita os dois loops aninhados?","Confirmar quais canais da tabela do roadmap estão ativos. Perfil completo no Arc.dev, com link do projeto âncora."],
+["2026-11-03",5,"Pipeline: Revelo + Strider","LeetCode 3 Longest Substring Without Repeating Characters (Medium).","revelo.com · onstrider.com · leetcode.com","Quando a janela cresce e quando ela encolhe?","Cadastro em Revelo e Strider."],
+["2026-11-04",5,"Pipeline: BEON.tech + Turing","LeetCode 424 Longest Repeating Character Replacement (Medium).","beon.tech · turing.com · leetcode.com","Qual invariante a janela mantém?","Cadastro em BEON.tech e Turing. Anotar prazos dos testes técnicos."],
+["2026-11-05",5,"Canais de nicho de Go + busca binária","Busca binária: fundamentos + LeetCode 704 Binary Search (Easy).","golang.cafe · reddit.com/r/golang · gophers.slack.com · leetcode.com","Por que mid := lo + (hi-lo)/2 e não (lo+hi)/2?","Alerta no Golang Cafe, thread do mês do r/golang Who's Hiring, Gophers Slack #jobs e alertas no LinkedIn (Golang remoto; Brasil só vaga Go excelente)."],
+["2026-11-06",5,"Planilha de tracking + revisão","Revisão da semana + gravação (refazer 1 problema da semana simulando entrevista).","-","Qual padrão da semana você reconheceria só pelo enunciado?","Planilha (Empresa, Data, Canal, Status, Próximo passo, Nota) + critérios do que torna uma vaga uma boa aposta."],
+["2026-11-07",5,"Primeira leva de candidaturas (fim de semana, 3-5h)","LeetCode 74 Search a 2D Matrix (Medium), gravado.","leetcode.com","Quais 3 vagas te deixaram mais animado, e por quê?","Primeira leva: 10 candidaturas bem escolhidas, cada mensagem citando o projeto âncora."],
+["2026-11-08",5,"Outreach + checkpoint semanal (fim de semana, 3-5h)","Atualizar o PATTERNS.md com sliding window e busca binária.","linkedin.com","Números da semana: candidaturas, respostas, processos.","5 mensagens para engenheiros de Go em empresas-alvo pedindo 15 min de conversa (nunca pedindo vaga direto). Checkpoint semanal."],
+["2026-11-09",5,"Busca binária: mínimo no array rotacionado","LeetCode 153 Find Minimum in Rotated Sorted Array (Medium).","leetcode.com","Qual metade você descarta, e por quê?","2-3 candidaturas."],
+["2026-11-10",5,"Busca binária: busca no array rotacionado","LeetCode 33 Search in Rotated Sorted Array (Medium).","leetcode.com","O que mudou em relação ao 153?","2-3 candidaturas."],
+["2026-11-11",5,"Heap: fundamentos","Heap: fundamentos + container/heap em Go + LeetCode 703 Kth Largest Element in a Stream (Easy).","pkg.go.dev/container/heap · leetcode.com","Quais 5 métodos um tipo precisa ter para usar container/heap?","2-3 candidaturas."],
+["2026-11-12",5,"Heap: k-ésimo maior","LeetCode 215 Kth Largest Element in an Array (Medium).","leetcode.com","Heap de tamanho k ou ordenar tudo: qual o Big-O de cada um?","1 outreach + responder o que chegou."],
+["2026-11-13",5,"Revisão + gravação","Revisão da semana + gravação.","-","Você sabe o stack e o produto de cada empresa que respondeu?","Organizar respostas e preparar entrevistas agendadas."],
+["2026-11-14",5,"Canais de nicho + system design (fim de semana, 3-5h)","System design cronometrado (45 min): rate limiter. Gravado.","excalidraw.com","O que você esqueceu de considerar até revisar?","Varredura dos canais de nicho de Go; candidaturas nas vagas relevantes."],
+["2026-11-15",5,"Follow-up + checkpoint semanal (fim de semana, 3-5h)","Atualizar o PATTERNS.md com heap.","-","Quantas candidaturas você reativou?","Follow-up educado nas candidaturas com mais de 7 dias sem resposta. Checkpoint semanal."],
+["2026-11-16",5,"Grafos: fundamentos","Grafos: lista de adjacência com map + LeetCode 200 Number of Islands (Medium).","leetcode.com","Onde o BFS/DFS de árvore muda quando existe ciclo?","2-3 candidaturas."],
+["2026-11-17",5,"Grafos: área de ilha","LeetCode 695 Max Area of Island (Medium).","leetcode.com","Como marcar uma célula como visitada sem um map extra?","2-3 candidaturas."],
+["2026-11-18",5,"Grafos: clonar","LeetCode 133 Clone Graph (Medium).","leetcode.com","Por que o map de nós já copiados evita loop infinito?","2-3 candidaturas."],
+["2026-11-19",5,"Grafos: BFS com várias origens","LeetCode 994 Rotting Oranges (Medium).","leetcode.com","Por que BFS dá o tempo mínimo aqui e DFS não?","1 outreach + responder o que chegou."],
+["2026-11-20",5,"Revisão + gravação","Revisão da semana + gravação.","-","Qual problema da semana você ainda não refaria sozinho?","Preparação para entrevistas agendadas."],
+["2026-11-21",5,"Mock completo (fim de semana, 3-5h)","Mock completo (técnica + comportamental) com IA ou par humano. Gravado.","-","O que mudou desde a simulação da semana 12?","Candidaturas da semana que faltaram."],
+["2026-11-22",5,"Diagnóstico de rejeições (fim de semana, 3-5h)","Atualizar o PATTERNS.md com grafos.","-","Existe um padrão nas rejeições (mesma etapa, mesmo tipo de pergunta)?","Para cada \"não\": o que aconteceu e o que você faria diferente. Checkpoint semanal."],
+["2026-11-23",5,"Grafos: ciclo e ordem topológica","LeetCode 207 Course Schedule (Medium).","leetcode.com","Como o grafo de pré-requisitos vira um problema de ciclo?","2-3 candidaturas. Semana de Thanksgiving nos EUA: respostas mais lentas."],
+["2026-11-24",5,"Intervalos: merge","LeetCode 56 Merge Intervals (Medium).","leetcode.com","Por que ordenar primeiro?","2-3 candidaturas."],
+["2026-11-25",5,"Intervalos: inserir","LeetCode 57 Insert Interval (Medium).","leetcode.com","Quais são as 3 fases do loop?","2-3 candidaturas."],
+["2026-11-26",5,"Intervalos: remover sobreposições","LeetCode 435 Non-overlapping Intervals (Medium).","leetcode.com","Por que ordenar pelo fim e não pelo início?","Follow-ups (Thanksgiving nos EUA)."],
+["2026-11-27",5,"Revisão + gravação","Revisão da semana + gravação.","-","Qual padrão do mês ainda é o mais fraco?","Preparação para entrevistas agendadas."],
+["2026-11-28",5,"Revisão do mês (fim de semana, 3-5h)","System design cronometrado: sistema de notificações. Gravado.","excalidraw.com","O que, honestamente, precisa mudar no funil?","Taxa de resposta por canal; ajustar currículo, mensagens e título do LinkedIn se estiver baixa."],
+["2026-11-29",5,"Checkpoint semanal + plano de dezembro (fim de semana, 3-5h)","Atualizar o PATTERNS.md com intervalos.","-","Quantos processos estão em andamento hoje?","Checkpoint semanal + escolher os canais de dezembro."],
+// ---- Fase 6: dezembro ----
+["2026-11-30",6,"DP 1D: escada","LeetCode 70 Climbing Stairs (Easy): fundamentos de programação dinâmica.","leetcode.com","Qual é o subproblema e qual é a recorrência?","2-3 candidaturas ou preparação para entrevistas."],
+["2026-12-01",6,"DP 1D: house robber","LeetCode 198 House Robber (Medium).","leetcode.com","Por que só os 2 últimos valores importam?","2-3 candidaturas ou preparação para entrevistas."],
+["2026-12-02",6,"DP 1D: custo mínimo","LeetCode 746 Min Cost Climbing Stairs (Easy).","leetcode.com","Como passar de O(n) para O(1) de espaço?","2-3 candidaturas ou preparação para entrevistas."],
+["2026-12-03",6,"DP: troco","LeetCode 322 Coin Change (Medium).","leetcode.com","Por que a estratégia gulosa falha aqui?","2-3 candidaturas ou preparação para entrevistas."],
+["2026-12-04",6,"Revisão + gravação","Revisão da semana + gravação.","-","Qual problema de DP você refaria sozinho?","Follow-ups."],
+["2026-12-05",6,"System design: chat (fim de semana, 3-5h)","System design cronometrado: chat em tempo real. Gravado.","excalidraw.com","Onde ficam as conexões abertas, e como elas escalam?","Varredura dos canais de nicho de Go."],
+["2026-12-06",6,"Checkpoint semanal (fim de semana, 3-5h)","Atualizar o PATTERNS.md com DP.","-","Números da semana: candidaturas, respostas, processos.","Checkpoint semanal."],
+["2026-12-07",6,"DP: house robber II","LeetCode 213 House Robber II (Medium).","leetcode.com","Como o círculo vira dois problemas lineares?","2-3 candidaturas ou preparação para entrevistas."],
+["2026-12-08",6,"DP: decode ways","LeetCode 91 Decode Ways (Medium).","leetcode.com","Quais casos de borda o zero cria?","2-3 candidaturas ou preparação para entrevistas."],
+["2026-12-09",6,"DP: word break","LeetCode 139 Word Break (Medium).","leetcode.com","O que dp[i] significa, em palavras?","2-3 candidaturas ou preparação para entrevistas."],
+["2026-12-10",6,"DP: maior subsequência crescente","LeetCode 300 Longest Increasing Subsequence (Medium).","leetcode.com","Por que a solução simples é O(n²)?","2-3 candidaturas ou preparação para entrevistas."],
+["2026-12-11",6,"Revisão + gravação","Revisão da semana + gravação.","-","Qual padrão de DP ainda é o mais fraco?","Follow-ups."],
+["2026-12-12",6,"Comportamental (fim de semana, 3-5h)","Reensaiar as 6 histórias STAR + regravar o \"Tell me about yourself\". Gravado.","-","Qual história ainda soa decorada?","Candidaturas da semana que faltaram."],
+["2026-12-13",6,"Revisão espaçada (fim de semana, 3-5h)","Refazer 2 problemas de novembro sem consultar.","-","Você lembrou o padrão ou a solução?","Checkpoint semanal."],
+["2026-12-14",6,"Revisão espaçada","1 problema antigo, sem consultar.","leetcode.com","Quanto tempo levou comparado à primeira vez?","2-3 candidaturas."],
+["2026-12-15",6,"Checkpoint 1","Se o checkpoint não passou: começar hoje a revisão de currículo, mensagens e canais.","-","Você tem pelo menos 1 triagem marcada?","Contar as triagens marcadas desde 02/11 e registrar o resultado no card de checkpoints."],
+["2026-12-16",6,"Última leva antes das festas","Estudo do dia ou ajustes do checkpoint.","-","O que você mudou no material de candidatura esta semana?","Candidaturas (última leva antes das festas)."],
+["2026-12-17",6,"Última leva antes das festas","Estudo do dia ou ajustes do checkpoint.","-","Quais canais trouxeram resposta até agora?","Candidaturas (última leva antes das festas)."],
+["2026-12-18",6,"Última leva antes das festas","Estudo do dia ou ajustes do checkpoint.","-","Quais processos ficam em aberto durante as festas?","Candidaturas (última leva antes das festas)."],
+["2026-12-19",6,"Mock ou reescrita (fim de semana, 3-5h)","Mock completo (se o checkpoint passou) ou reescrita do material de candidatura (se não passou).","-","O que mudou desde o mock de novembro?","Responder processos em andamento."],
+["2026-12-20",6,"Mock ou reescrita (fim de semana, 3-5h)","Continuação do sábado.","-","O que fica pronto antes da pausa das festas?","Responder processos em andamento."]
 ];
 
+// ---- Festas + Fase 7 (janeiro a março): gerados por semana ----
+const WEEKS = [
+  // [início (segunda), fim (domingo), fase, tema, estudo, recurso, pergunta]
+  ["2027-01-04","2027-01-10",7,"Super revisão: fundamentos e concorrência","Refazer sem consultar: worker pool, context, race conditions e padrões de erro (Fases 1-2).","go-journey","Qual desses você ainda não escreveria de cabeça?"],
+  ["2027-01-11","2027-01-17",7,"Super revisão: sistemas distribuídos","Conceitos da Fase 3: mensageria, at-least-once, idempotência, retry/DLQ, observabilidade.","go-journey · investment-engine","Você explica cada conceito com um exemplo real do projeto?"],
+  ["2027-01-18","2027-01-24",7,"Super revisão: algoritmos","Refazer 1 problema de cada padrão do PATTERNS.md, cronometrado.","leetcode.com","Qual padrão ficou mais lento do que na primeira vez?"],
+  ["2027-01-25","2027-01-31",7,"Super revisão: system design","2 exercícios cronometrados de 45 min.","excalidraw.com","O que você sempre esquece de considerar?"],
+  ["2027-02-01","2027-02-07",7,"Aprofundamento: Go avançado","Generics, pprof e benchmarks, testes avançados. Na semana da mudança para Curitiba: só follow-ups e processos.","go.dev/doc · pkg.go.dev/runtime/pprof","Onde generics deixam o código mais claro, e onde não?"],
+  ["2027-02-08","2027-02-14",7,"Aprofundamento: backtracking e tries","Backtracking e tries, 1 problema por dia. Na semana da mudança: só follow-ups e processos.","leetcode.com","Como você poda a árvore de busca?"],
+  ["2027-02-15","2027-02-21",7,"Aprofundamento: grafos avançados","Caminho mínimo com pesos. Na semana da mudança: só follow-ups e processos.","leetcode.com","Por que BFS não basta quando as arestas têm peso?"],
+  ["2027-02-22","2027-02-28",7,"Aprofundamento: system design","Casos novos de system design. Na semana da mudança: só follow-ups e processos.","excalidraw.com","Que trade-off você explicaria primeiro numa entrevista?"],
+  ["2027-03-01","2027-03-07",7,"Fechamento: processos finais","Preparação específica para as rodadas em andamento; nos dias sem entrevista, revisão espaçada.","-","Você entende o que cada etapa em andamento avalia?"],
+  ["2027-03-08","2027-03-14",7,"Fechamento: processos finais","Preparação específica para as rodadas. Ao surgir oferta: pesquisa salarial (levels.fyi, Glassdoor) e simulação de negociação em inglês.","levels.fyi · glassdoor.com","Qual é o seu número-alvo e o mínimo aceitável?"],
+  ["2027-03-15","2027-03-21",7,"Fechamento: oferta e negociação","Antes de aceitar: contador (PJ, câmbio, imposto de renda). Com mais de uma oferta: comparar stack, fuso, crescimento e estabilidade.","-","Você está decidindo com clareza ou com ansiedade?"],
+  ["2027-03-22","2027-03-31",7,"Fechamento: reta final","Preparação para as rodadas restantes; revisão espaçada nos dias livres.","-","O que os checkpoints mostraram sobre o funil?"]
+];
+
+function addDays(iso, n){ const [y,m,d]=iso.split('-').map(Number); const dt=new Date(y,m-1,d+n); return isoOf(dt); }
+function isoOf(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+function dow(iso){ const [y,m,d]=iso.split('-').map(Number); return new Date(y,m-1,d).getDay(); }
+
+(function buildGenerated(){
+  for(let iso="2026-12-21"; iso<="2027-01-03"; iso=addDays(iso,1)){
+    ROWS.push([iso,6,"Festas: pausa nas candidaturas","Estudo leve e opcional (sugestão: 100 Go Mistakes and How to Avoid Them, Teiva Harsanyi) e descanso de verdade.","-","-","Sem candidaturas novas; responder só processos em andamento."]);
+  }
+  WEEKS.forEach(([start,end,phase,theme,study,res,q])=>{
+    for(let iso=start; iso<=end; iso=addDays(iso,1)){
+      const w = dow(iso);
+      let row;
+      if(w>=1 && w<=4) row=[iso,phase,theme,study,res,q,"~45 min: 2-3 candidaturas, follow-ups ou preparação para entrevista."];
+      else if(w===5) row=[iso,phase,theme+": revisão","Revisão da semana + gravação.","-","O que da semana você ainda não explicaria sem consultar?","Follow-ups."];
+      else if(w===6) row=[iso,phase,theme+" (fim de semana, 3-5h)","Aprofundamento do tema + gravação ou mock.",res,q,"Varredura dos canais de nicho de Go."];
+      else row=[iso,phase,"Checkpoint semanal (fim de semana, 3-5h)","Revisão espaçada: refazer problemas antigos sem consultar.","-","Números da semana: candidaturas, respostas, processos.","Checkpoint semanal."];
+      ROWS.push(row);
+    }
+  });
+  const override = (iso, focus, q, cand) => { const r = ROWS.find(x=>x[0]===iso); if(r){ r[2]=focus; r[5]=q; r[6]=cand; } };
+  override("2027-01-31","Checkpoint 2 (fim de semana, 3-5h)","Algum processo passou da triagem?","Registrar o resultado no card de checkpoints.");
+  override("2027-02-28","Checkpoint 3 (fim de semana, 3-5h)","Algum processo está em etapa final?","Registrar o resultado no card de checkpoints.");
+  override("2027-03-31","Meta: oferta até hoje","O que você aprendeu com o funil, independente do resultado?","Registrar o resultado da meta no card de checkpoints.");
+})();
+
 const DATA_MAP = {};
-DATA.forEach(row=>{
-  DATA_MAP[row[0]] = {date:row[0], phase:row[1], foco:row[2], acao:row[3], rec:row[4], pergunta:row[5]};
-});
+ROWS.forEach(r=>{ DATA_MAP[r[0]] = {date:r[0], phase:r[1], focus:r[2], action:r[3], res:r[4], question:r[5], apply:r[6]}; });
+const DATES = ROWS.map(r=>r[0]).sort();
+const FIRST = DATES[0], LAST = DATES[DATES.length-1];
 
-function todayISO(){
-  const d = new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function fmtDate(iso){
-  const [y,m,d] = iso.split('-');
-  const dias=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  const dt = new Date(y,m-1,d);
-  return dias[dt.getDay()]+' '+d+'/'+m+'/'+y;
-}
+/* ---------- state ---------- */
+let doneMap = {}, notesMap = {}, pipelineMap = {}, extras = [], checkpoints = {};
+const KEYS = {done:'go-roadmap-done', notes:'go-roadmap-notes', pipe:'go-roadmap-pipeline', extras:'go-roadmap-extras', cps:'go-roadmap-checkpoints'};
 
-let doneMap = {};
-let notesMap = {};
+function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+async function wsGet(k){ try{ if(window.storage && typeof window.storage.get==='function'){ const r=await window.storage.get(k); return r && r.value ? JSON.parse(r.value) : null; } }catch(e){} return null; }
+async function wsSet(k,v){ try{ if(window.storage && typeof window.storage.set==='function'){ await window.storage.set(k, JSON.stringify(v)); } }catch(e){} }
 
 async function loadState(){
-  try {
-    if (window.storage && typeof window.storage.get === 'function') {
-      const r = await window.storage.get('go-roadmap-done');
-      if (r && r.value) doneMap = JSON.parse(r.value);
-      const r2 = await window.storage.get('go-roadmap-notes');
-      if (r2 && r2.value) notesMap = JSON.parse(r2.value);
-    }
-  } catch(e){}
-
-  try {
-    const r = localStorage.getItem('go-roadmap-done');
-    if (r) doneMap = JSON.parse(r);
-  } catch(e){}
-  try {
-    const r2 = localStorage.getItem('go-roadmap-notes');
-    if (r2) notesMap = JSON.parse(r2);
-  } catch(e){}
-
-  // Tenta carregar arquivo de dados local em caso de execução via servidor local
-  try {
-    const res = await fetch('./go-roadmap-dados.json');
-    if (res.ok) {
+  doneMap = (await wsGet(KEYS.done)) || {}; notesMap = (await wsGet(KEYS.notes)) || {};
+  pipelineMap = (await wsGet(KEYS.pipe)) || {}; extras = (await wsGet(KEYS.extras)) || []; checkpoints = (await wsGet(KEYS.cps)) || {};
+  doneMap = lsGet(KEYS.done) || doneMap; notesMap = lsGet(KEYS.notes) || notesMap;
+  pipelineMap = lsGet(KEYS.pipe) || pipelineMap; extras = lsGet(KEYS.extras) || extras; checkpoints = lsGet(KEYS.cps) || checkpoints;
+  // When served from a local server, the JSON file fills in what the browser does not have yet.
+  try{
+    const res = await fetch('./go-roadmap-dados.json', {cache:'no-store'});
+    if(res.ok){
       const data = await res.json();
-      if (data.doneMap) doneMap = Object.assign({}, data.doneMap, doneMap);
-      if (data.notesMap) notesMap = Object.assign({}, data.notesMap, notesMap);
+      if(data.doneMap) doneMap = Object.assign({}, data.doneMap, doneMap);
+      if(data.notesMap) notesMap = Object.assign({}, data.notesMap, notesMap);
+      if(data.pipelineMap) pipelineMap = Object.assign({}, data.pipelineMap, pipelineMap);
+      if(data.checkpoints) checkpoints = Object.assign({}, data.checkpoints, checkpoints);
+      if(Array.isArray(data.extras) && !extras.length) extras = data.extras;
     }
-  } catch(e){}
+  }catch(e){}
+}
+async function save(key, value){ lsSet(key, value); await wsSet(key, value); }
+const saveDone = () => save(KEYS.done, doneMap);
+const saveNotes = () => save(KEYS.notes, notesMap);
+const savePipe = () => save(KEYS.pipe, pipelineMap);
+const saveExtras = () => save(KEYS.extras, extras);
+const saveCps = () => save(KEYS.cps, checkpoints);
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MONTHS = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function todayISO(){ return isoOf(new Date()); }
+function fmtDate(iso){ const [y,m,d]=iso.split('-'); return DAYS[dow(iso)]+' '+d+'/'+m+'/'+y; }
+function fmtShort(iso){ const [,m,d]=iso.split('-'); return d+'/'+m; }
+function daysBetween(a,b){ const [y1,m1,d1]=a.split('-').map(Number), [y2,m2,d2]=b.split('-').map(Number); return Math.round((Date.UTC(y2,m2-1,d2)-Date.UTC(y1,m1-1,d1))/86400000); }
+function isWeekendRow(e){ return /fim de semana/.test(e.focus); }
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),1800); }
+
+/* ---------- stats ---------- */
+function stats(){
+  const today = todayISO();
+  const upto = DATES.filter(d=>d<=today);
+  const done = DATES.filter(d=>doneMap[d]).length;
+  const late = DATES.filter(d=>d<today && !doneMap[d]).length;
+  const lastDone = DATES.filter(d=>doneMap[d] && d<=today).pop();
+  let streak = 0;
+  if(lastDone){ let d = lastDone; while(doneMap[d]){ streak++; d = addDays(d,-1); } }
+  return {done, total:DATES.length, upto:upto.length, late, streak, toGoal:daysBetween(today, GOAL_DATE)};
+}
+function firstPending(){
+  const today = todayISO();
+  const from = addDays(today,-21);
+  return DATES.find(d=>d>=from && d<=today && !doneMap[d]) || (DATA_MAP[today] ? today : DATES.find(d=>!doneMap[d]) || LAST);
 }
 
-async function saveDone(){
-  try {
-    if (window.storage && typeof window.storage.set === 'function') {
-      await window.storage.set('go-roadmap-done', JSON.stringify(doneMap));
-    }
-  } catch(e){}
-  try {
-    localStorage.setItem('go-roadmap-done', JSON.stringify(doneMap));
-  } catch(e){}
+/* ---------- journey track ---------- */
+function posOf(iso){ const span = daysBetween(FIRST, LAST); return Math.max(0, Math.min(100, daysBetween(FIRST, iso)/span*100)); }
+function renderJourney(){
+  const s = stats();
+  $('pct').innerHTML = Math.round(s.done/s.total*100)+'%<small>do caminho ('+s.done+' de '+s.total+' dias)</small>';
+  const facts = [];
+  facts.push('<span>Sequência <b>'+s.streak+'</b> '+(s.streak===1?'dia':'dias')+'</span>');
+  facts.push('<span class="'+(s.late>0?'late':'')+'">Pendentes até ontem <b>'+s.late+'</b></span>');
+  const nextCp = CHECKPOINTS.find(c=>c.date>=todayISO());
+  if(nextCp) facts.push('<span>'+esc(nextCp.label)+' em <b>'+daysBetween(todayISO(), nextCp.date)+'</b> dias</span>');
+  $('facts').innerHTML = facts.join('');
+
+  const span = daysBetween(FIRST, LAST)+1;
+  let bar = '<div class="track-bar">';
+  let names = '';
+  const cur = DATA_MAP[currentDate] ? DATA_MAP[currentDate].phase : null;
+  Object.keys(PHASES).forEach(p=>{
+    const days = DATES.filter(d=>DATA_MAP[d].phase==p);
+    const w = days.length/span*100;
+    const pct = days.filter(d=>doneMap[d]).length/days.length*100;
+    bar += '<div class="seg" style="width:'+w+'%;--c:'+PHASES[p].color+'"><div class="rest"></div><div class="fill" style="width:'+pct+'%"></div>'+
+      '<button title="'+esc(PHASES[p].full)+': '+Math.round(pct)+'% concluído — abrir o primeiro dia" data-phase="'+p+'"><span class="sr">'+esc(PHASES[p].full)+'</span></button></div>';
+    names += '<div style="width:'+w+'%" class="'+(cur==p?'on':'')+'">'+esc(PHASES[p].name)+'</div>';
+  });
+  bar += '</div>';
+  let flags = '';
+  CHECKPOINTS.forEach(c=>{
+    const st = checkpoints[c.id];
+    flags += '<div class="flag '+(c.id==='goal'?'goal ':'')+(st||'')+'" style="left:'+posOf(c.date)+'%"><i></i><span>'+fmtShort(c.date)+'</span></div>';
+  });
+  const t = todayISO();
+  const here = (t>=FIRST && t<=LAST) ? '<div class="here" style="left:'+posOf(t)+'%" title="Hoje"></div>' : '';
+  $('track').innerHTML = bar + flags + here;
+  $('phaseNames').innerHTML = names;
+  $('track').querySelectorAll('button[data-phase]').forEach(b=>b.addEventListener('click',()=>{
+    const p = b.dataset.phase; const d = DATES.find(x=>DATA_MAP[x].phase==p && !doneMap[x]) || DATES.find(x=>DATA_MAP[x].phase==p);
+    go(d);
+  }));
 }
 
-async function saveNotes(){
-  try {
-    if (window.storage && typeof window.storage.set === 'function') {
-      await window.storage.set('go-roadmap-notes', JSON.stringify(notesMap));
-    }
-  } catch(e){}
-  try {
-    localStorage.setItem('go-roadmap-notes', JSON.stringify(notesMap));
-  } catch(e){}
+/* ---------- day card ---------- */
+let currentDate = todayISO();
+function resourcesHTML(res){
+  if(!res || res==='-') return '';
+  const parts = res.split(/\s*[·+]\s*/).filter(Boolean);
+  return '<div class="block"><div class="lbl">Recursos</div><div class="res">'+parts.map(p=>{
+    const looksUrl = /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(p);
+    return looksUrl ? '<a href="https://'+esc(p)+'" target="_blank" rel="noopener">'+esc(p)+'</a>' : '<span>'+esc(p)+'</span>';
+  }).join('')+'</div></div>';
+}
+function renderDay(){
+  const e = DATA_MAP[currentDate];
+  const card = $('dayCard');
+  $('navDate').textContent = fmtDate(currentDate);
+  $('prevBtn').disabled = currentDate<=FIRST; $('nextBtn').disabled = currentDate>=LAST;
+  if(!e){
+    card.style.setProperty('--pc','var(--line)');
+    card.innerHTML = '<div class="empty">'+(currentDate<FIRST ? 'O roadmap começa em 28/07/2026.' : 'Este dia está fora do roadmap, que vai até 31/03/2027.')+'</div>';
+    $('noteInput').value=''; $('noteInput').disabled=true; updateNoteMeta(); return;
+  }
+  $('noteInput').disabled=false;
+  const ph = PHASES[e.phase];
+  card.style.setProperty('--pc', ph.color);
+  const weekend = isWeekendRow(e);
+  const festas = /^Festas/.test(e.focus);
+  const fmt = festas ? 'Pausa' : weekend ? '3-5h' : (e.date >= '2026-10-13' ? '1h30' : '1h');
+  const title = e.focus.replace(/\s*\(fim de semana, 3-5h\)/,'');
+  let body = '';
+  if(e.apply){
+    body += '<div class="blocks2"><div class="block"><div class="lbl">Candidaturas'+(weekend||festas?'':' · ~45 min')+'</div><p>'+esc(e.apply)+'</p></div>'+
+            '<div class="block"><div class="lbl">Estudo'+(weekend||festas?'':' · ~45 min')+'</div><p>'+esc(e.action)+'</p></div></div>';
+  } else {
+    body += '<div class="block"><div class="lbl">O que fazer</div><p>'+esc(e.action)+'</p></div>';
+  }
+  body += resourcesHTML(e.res);
+  if(e.question && e.question!=='-') body += '<div class="question"><div class="lbl">Pergunta do dia</div>'+esc(e.question)+'</div>';
+  const done = !!doneMap[e.date];
+  card.innerHTML =
+    '<div class="day-head"><span class="chip phase">Fase '+e.phase+': '+esc(ph.full)+'</span><span class="chip fmt">'+fmt+'</span></div>'+
+    '<h3>'+esc(title)+'</h3>'+ body +
+    '<div class="day-actions">'+
+      '<button class="btn '+(done?'done':'primary')+'" id="markDoneBtn">'+(done?'Concluído ✓':'Marcar como concluído')+'</button>'+
+      '<button class="btn" id="copyPromptBtn" title="Copia a mensagem para colar no chat da mentoria">Copiar prompt do dia</button>'+
+    '</div>';
+  $('markDoneBtn').addEventListener('click', toggleDone);
+  $('copyPromptBtn').addEventListener('click', copyPrompt);
+  $('noteInput').value = notesMap[e.date] || '';
+  updateNoteMeta();
 }
 
-function exportJSON(){
-  const payload = {
-    doneMap: doneMap,
-    notesMap: notesMap,
-    exportedAt: new Date().toISOString()
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+async function toggleDone(){
+  doneMap[currentDate] = !doneMap[currentDate];
+  if(!doneMap[currentDate]) delete doneMap[currentDate];
+  await saveDone();
+  toast(doneMap[currentDate] ? 'Dia marcado como concluído.' : 'Marcação removida.');
+  renderAll();
+}
+
+function copyPrompt(){
+  const e = DATA_MAP[currentDate];
+  const ph = PHASES[e.phase];
+  let p = 'Estou no dia '+fmtDate(e.date)+' do meu roadmap de transição para Go (Fase '+e.phase+' — '+ph.full+'). A tarefa de hoje é: "'+e.focus+'". ';
+  if(e.apply) p += 'Bloco de candidaturas: '+e.apply+' Bloco de estudo: '+e.action+' ';
+  else p += 'Ação prevista: '+e.action+' ';
+  if(e.res && e.res!=='-') p += 'Recurso sugerido: '+e.res+'. ';
+  if(e.question && e.question!=='-') p += 'Pergunta de autoavaliação do dia: "'+e.question+'". ';
+  p += 'Me explique tim-tim por tim-tim o que fazer, com exemplos de código em Go quando fizer sentido, e me faça perguntas ao longo do caminho para checar se eu realmente entendi antes de avançar.';
+  const done = () => toast('Prompt copiado. Cole no chat da mentoria.');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(p).then(done).catch(()=>fallbackCopy(p, done));
+  } else fallbackCopy(p, done);
+}
+function fallbackCopy(text, cb){
+  const ta = document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); cb(); }catch(e){ toast('Não deu para copiar. Selecione o texto manualmente.'); }
+  document.body.removeChild(ta);
+}
+
+/* ---------- notes ---------- */
+let noteTimer = null;
+function updateNoteMeta(){ const n = $('noteInput').value.length; $('noteCount').textContent = n.toLocaleString('pt-BR')+' caracteres'; }
+$('noteInput').addEventListener('input', ()=>{
+  updateNoteMeta();
+  $('noteStatus').textContent = 'Salvando…'; $('noteStatus').className='';
+  clearTimeout(noteTimer);
+  const date = currentDate, value = $('noteInput').value;
+  noteTimer = setTimeout(async ()=>{
+    if(value.trim()) notesMap[date] = value; else delete notesMap[date];
+    await saveNotes();
+    $('noteStatus').textContent = 'Salvo'; $('noteStatus').className='saved';
+    renderCalendar(); runSearch();
+  }, 400);
+});
+async function flushNote(){
+  if(!noteTimer) return;
+  clearTimeout(noteTimer); noteTimer=null;
+  const v = $('noteInput').value;
+  if(DATA_MAP[currentDate]){ if(v.trim()) notesMap[currentDate]=v; else delete notesMap[currentDate]; await saveNotes(); }
+}
+
+/* ---------- funnel ---------- */
+const PIPE_FIELDS = [['sent','Candidaturas'],['replies','Respostas'],['interviews','Entrevistas']];
+function weekStart(iso){ const w = dow(iso); return addDays(iso, -((w+6)%7)); }
+function renderFunnel(){
+  const box = $('funnel');
+  const d = currentDate;
+  let html = '';
+  if(d < FUNNEL_START){
+    box.innerHTML = '<p class="hint" style="margin-top:0">As candidaturas começam em 02/11. A partir desse dia, registre aqui o que enviou, as respostas e as entrevistas de cada dia, e a semana aparece somada com um gráfico das últimas 8 semanas.</p>';
+    return;
+  } else if(DATA_MAP[d]){
+    const v = pipelineMap[d] || {};
+    html += '<div class="counters">'+PIPE_FIELDS.map(([k,l])=>
+      '<div class="counter"><div class="lbl">'+l+' em '+fmtShort(d)+'</div><div class="row"><span class="n">'+(v[k]||0)+'</span>'+
+      '<span class="pm"><button class="btn small" data-k="'+k+'" data-d="-1" aria-label="Diminuir '+l+'">−</button><button class="btn small" data-k="'+k+'" data-d="1" aria-label="Aumentar '+l+'">+</button></span></div></div>').join('')+'</div>';
+  }
+  // totals
+  const sum = (filter) => PIPE_FIELDS.map(([k])=>Object.entries(pipelineMap).filter(([day])=>filter(day)).reduce((a,[,v])=>a+(v[k]||0),0));
+  const ws = weekStart(d);
+  const wk = sum(day=>day>=ws && day<=addDays(ws,6));
+  const all = sum(()=>true);
+  html += '<div class="totals"><span></span>'+PIPE_FIELDS.map(([,l])=>'<span class="h">'+l+'</span>').join('')+
+          '<span class="h">Semana de '+fmtShort(ws)+'</span>'+wk.map(n=>'<span>'+n+'</span>').join('')+
+          '<span class="h">Total</span>'+all.map(n=>'<span>'+n+'</span>').join('')+'</div>';
+  // last 8 weeks of applications sent
+  const weeks = [];
+  for(let i=7;i>=0;i--){ const s = addDays(ws, -7*i); weeks.push([s, sum(day=>day>=s && day<=addDays(s,6))[0]]); }
+  const max = Math.max(1, ...weeks.map(w=>w[1]));
+  html += '<div class="bars" aria-label="Candidaturas enviadas nas últimas 8 semanas">'+weeks.map(([s,n])=>
+    '<div class="'+(n?'':'zero')+'" style="height:'+(n/max*100)+'%" title="Semana de '+fmtShort(s)+': '+n+' candidaturas"></div>').join('')+'</div>'+
+    '<div class="bars-x">'+weeks.map(([s])=>'<span>'+fmtShort(s)+'</span>').join('')+'</div>'+
+    '<p class="hint" style="margin:8px 0 0">Candidaturas enviadas por semana. Meta: 10 a 15.</p>';
+  box.innerHTML = html;
+  box.querySelectorAll('button[data-k]').forEach(b=>b.addEventListener('click', async ()=>{
+    const v = pipelineMap[d] || (pipelineMap[d] = {});
+    v[b.dataset.k] = Math.max(0, (v[b.dataset.k]||0) + Number(b.dataset.d));
+    await savePipe(); renderFunnel();
+  }));
+}
+
+/* ---------- checkpoints ---------- */
+function renderCheckpoints(){
+  const t = todayISO();
+  $('checkpoints').innerHTML = CHECKPOINTS.map(c=>{
+    const left = daysBetween(t, c.date);
+    const when = left>0 ? 'em '+left+' dias' : left===0 ? 'hoje' : 'há '+(-left)+' dias';
+    const st = checkpoints[c.id];
+    return '<div class="cp"><div><div class="when">'+fmtShort(c.date)+'</div><div class="left">'+when+'</div></div>'+
+      '<div><div class="crit">'+esc(c.label)+': '+esc(c.crit)+'</div><div class="fail">'+esc(c.fail)+'</div>'+
+      '<div class="st"><button class="btn small '+(st==='pass'?'on-pass':'')+'" data-cp="'+c.id+'" data-v="pass" aria-pressed="'+(st==='pass')+'">Passou</button>'+
+      '<button class="btn small '+(st==='fail'?'on-fail':'')+'" data-cp="'+c.id+'" data-v="fail" aria-pressed="'+(st==='fail')+'">Não passou</button></div></div></div>';
+  }).join('');
+  $('checkpoints').querySelectorAll('button[data-cp]').forEach(b=>b.addEventListener('click', async ()=>{
+    const id=b.dataset.cp, v=b.dataset.v;
+    if(checkpoints[id]===v) delete checkpoints[id]; else checkpoints[id]=v;
+    await saveCps(); renderCheckpoints(); renderJourney();
+  }));
+}
+
+/* ---------- extras ---------- */
+function renderExtras(){
+  const ul = $('extrasList');
+  if(!extras.length){ ul.innerHTML = '<li class="hint">Nada pendente. Quando um aprofundamento não couber no dia, anote aqui.</li>'; return; }
+  const ordered = extras.map((x,i)=>[x,i]).sort((a,b)=>(a[0].done?1:0)-(b[0].done?1:0));
+  ul.innerHTML = ordered.map(([x,i])=>
+    '<li class="'+(x.done?'done':'')+'"><input type="checkbox" id="ex'+i+'" data-i="'+i+'" '+(x.done?'checked':'')+'>'+
+    '<label for="ex'+i+'" style="flex:1"><span>'+esc(x.text)+'</span><br><small class="hint">anotado em '+fmtShort(x.from)+'</small></label>'+
+    '<button class="x" data-del="'+i+'" aria-label="Apagar">×</button></li>').join('');
+  ul.querySelectorAll('input[data-i]').forEach(c=>c.addEventListener('change', async ()=>{ extras[c.dataset.i].done = c.checked; await saveExtras(); renderExtras(); }));
+  ul.querySelectorAll('button[data-del]').forEach(b=>b.addEventListener('click', async ()=>{ extras.splice(Number(b.dataset.del),1); await saveExtras(); renderExtras(); }));
+}
+$('extraForm').addEventListener('submit', async ev=>{
+  ev.preventDefault();
+  const v = $('extraInput').value.trim(); if(!v) return;
+  extras.push({text:v, from:currentDate, done:false}); $('extraInput').value='';
+  await saveExtras(); renderExtras(); toast('Extra adicionado.');
+});
+
+/* ---------- search ---------- */
+function runSearch(){
+  const q = $('searchInput').value.trim();
+  const box = $('results');
+  if(q.length<2){ box.innerHTML = '<p class="hint" style="margin:6px 0 0">'+Object.keys(notesMap).filter(k=>notesMap[k]&&notesMap[k].trim()).length+' dias com anotação. Digite pelo menos 2 letras.</p>'; return; }
+  const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const nq = norm(q);
+  const hits = Object.keys(notesMap).sort().reverse().filter(d=>notesMap[d] && norm(notesMap[d]).includes(nq));
+  if(!hits.length){ box.innerHTML = '<p class="hint" style="margin:6px 0 0">Nenhuma anotação com "'+esc(q)+'".</p>'; return; }
+  box.innerHTML = hits.slice(0,40).map(d=>{
+    const text = notesMap[d], i = norm(text).indexOf(nq);
+    const a = Math.max(0,i-60), b = Math.min(text.length, i+q.length+80);
+    const snip = (a>0?'…':'')+esc(text.slice(a,i))+'<mark>'+esc(text.slice(i,i+q.length))+'</mark>'+esc(text.slice(i+q.length,b))+(b<text.length?'…':'');
+    const f = DATA_MAP[d] ? DATA_MAP[d].focus.replace(/\s*\(fim de semana, 3-5h\)/,'') : '';
+    return '<button class="result" data-d="'+d+'"><div class="rd">'+fmtDate(d)+(f?': '+esc(f):'')+'</div><div class="rs">'+snip.replace(/\n+/g,' ')+'</div></button>';
+  }).join('');
+  box.querySelectorAll('button[data-d]').forEach(b=>b.addEventListener('click',()=>{ go(b.dataset.d); window.scrollTo({top:0,behavior:'smooth'}); }));
+}
+$('searchInput').addEventListener('input', runSearch);
+
+/* ---------- calendar ---------- */
+function renderCalendar(){
+  const t = todayISO();
+  let html = '';
+  let [y,m] = FIRST.split('-').map(Number);
+  const [ly,lm] = LAST.split('-').map(Number);
+  while(y<ly || (y===ly && m<=lm)){
+    const first = y+'-'+String(m).padStart(2,'0')+'-01';
+    const daysIn = new Date(y,m,0).getDate();
+    const lead = (dow(first)+6)%7;
+    let cells = '';
+    for(let i=0;i<lead;i++) cells += '<span></span>';
+    for(let d=1; d<=daysIn; d++){
+      const iso = y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      const e = DATA_MAP[iso];
+      if(!e){ cells += '<button class="cell out" disabled tabindex="-1">'+d+'</button>'; continue; }
+      const cls = ['cell','in'];
+      if(doneMap[iso]) cls.push('ok');
+      if(iso===t) cls.push('today');
+      if(iso===currentDate) cls.push('sel');
+      if(notesMap[iso] && notesMap[iso].trim()) cls.push('has-note');
+      const label = fmtDate(iso)+': '+e.focus+(doneMap[iso]?' (concluído)':'');
+      cells += '<button class="'+cls.join(' ')+'" style="--c:'+PHASES[e.phase].color+'" data-d="'+iso+'" title="'+esc(label)+'" aria-label="'+esc(label)+'">'+d+'</button>';
+    }
+    html += '<div class="month"><div class="mname">'+MONTHS[m-1][0].toUpperCase()+MONTHS[m-1].slice(1)+' '+y+'</div>'+
+      '<div class="wk">'+['S','T','Q','Q','S','S','D'].map(x=>'<span>'+x+'</span>').join('')+'</div><div class="mgrid">'+cells+'</div></div>';
+    m++; if(m>12){ m=1; y++; }
+  }
+  $('months').innerHTML = html;
+  $('months').querySelectorAll('button[data-d]').forEach(b=>b.addEventListener('click',()=>{ go(b.dataset.d); window.scrollTo({top:0,behavior:'smooth'}); }));
+  $('legend').innerHTML = Object.keys(PHASES).map(p=>'<span><i style="background:'+PHASES[p].color+'"></i>'+esc(PHASES[p].name)+'</span>').join('')+
+    '<span>Cor cheia: concluído</span><span>Cor clara: pendente</span><span>Ponto amarelo: tem anotação</span>';
+}
+
+/* ---------- navigation ---------- */
+async function go(iso){ await flushNote(); currentDate = iso; $('noteStatus').textContent=''; renderAll(); }
+function renderAll(){ renderJourney(); renderDay(); renderFunnel(); renderCheckpoints(); renderCalendar(); }
+$('prevBtn').addEventListener('click', ()=>{ if(currentDate>FIRST) go(addDays(currentDate,-1)); });
+$('nextBtn').addEventListener('click', ()=>{ if(currentDate<LAST) go(addDays(currentDate,1)); });
+$('todayBtn').addEventListener('click', ()=>go(todayISO()));
+$('pendingBtn').addEventListener('click', ()=>go(firstPending()));
+document.addEventListener('keydown', ev=>{
+  if(['TEXTAREA','INPUT'].includes(document.activeElement.tagName)) return;
+  if(ev.key==='ArrowLeft') $('prevBtn').click();
+  if(ev.key==='ArrowRight') $('nextBtn').click();
+});
+window.addEventListener('beforeunload', ()=>{ if(noteTimer){ const v=$('noteInput').value; if(v.trim()) notesMap[currentDate]=v; lsSet(KEYS.notes, notesMap); } });
+
+/* ---------- export / import ---------- */
+$('exportJsonBtn').addEventListener('click', async ()=>{
+  await flushNote();
+  const payload = {doneMap, notesMap, pipelineMap, extras, checkpoints, exportedAt:new Date().toISOString()};
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'go-roadmap-dados.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  toast('Arquivo go-roadmap-dados.json exportado!');
-}
-
-function importJSON(file){
-  if(!file) return;
+  const a = document.createElement('a'); a.href=url; a.download='go-roadmap-dados.json';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  toast('go-roadmap-dados.json exportado.');
+});
+$('importJsonBtn').addEventListener('click', ()=>$('importJsonInput').click());
+$('importJsonInput').addEventListener('change', ev=>{
+  const file = ev.target.files && ev.target.files[0]; if(!file) return;
   const reader = new FileReader();
-  reader.onload = async (e) => {
-    try {
+  reader.onload = async e=>{
+    try{
       const data = JSON.parse(e.target.result);
       if(data.doneMap) doneMap = data.doneMap;
       if(data.notesMap) notesMap = data.notesMap;
-      await saveDone();
-      await saveNotes();
-      document.getElementById('streakNum').textContent = computeStreak();
-      renderDay(currentDate);
-      renderCalendar();
-      toast('Dados importados com sucesso!');
-    } catch(err) {
-      toast('Erro ao ler arquivo JSON.');
-    }
+      if(data.pipelineMap) pipelineMap = data.pipelineMap;
+      if(Array.isArray(data.extras)) extras = data.extras;
+      if(data.checkpoints) checkpoints = data.checkpoints;
+      await Promise.all([saveDone(), saveNotes(), savePipe(), saveExtras(), saveCps()]);
+      renderAll(); renderExtras(); runSearch(); toast('Dados importados.');
+    }catch(err){ toast('Esse arquivo não é um JSON válido do painel.'); }
   };
-  reader.readAsText(file);
-}
-
-function computeStreak(){
-  let streak=0;
-  let d = new Date();
-  while(true){
-    const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    if(doneMap[iso]){ streak++; d.setDate(d.getDate()-1); } else break;
-  }
-  return streak;
-}
-
-let currentDate = todayISO();
-
-function renderDay(iso){
-  currentDate = iso;
-  const entry = DATA_MAP[iso];
-  const card = document.getElementById('dayCard');
-  if(!entry){
-    const before = iso < DATA[0][0];
-    card.innerHTML = `<div class="empty">${before ? 'Ainda não começou — o roadmap inicia em 28/07/2026.' : 'Fora do período do roadmap (ou ele já terminou — parabéns por chegar até aqui!).'}</div>`;
-    document.getElementById('noteInput').value='';
-    return;
-  }
-  card.innerHTML = `
-    <div class="phase-tag">Fase ${entry.phase} · ${PHASES[entry.phase]}</div>
-    <div class="day-title">${entry.foco}</div>
-    <div class="day-meta">${fmtDate(entry.date)}</div>
-    <div class="field-label">O que fazer</div>
-    <div class="field-value">${entry.acao}</div>
-    <div class="field-label">Recurso</div>
-    <div><span class="resource">${entry.rec}</span></div>
-    <div class="field-label">Pergunta de autoavaliação</div>
-    <div class="question-box">${entry.pergunta}</div>
-  `;
-  document.getElementById('noteInput').value = notesMap[iso] || '';
-  document.getElementById('markDoneBtn').classList.toggle('done', !!doneMap[iso]);
-  document.getElementById('markDoneBtn').textContent = doneMap[iso] ? '✓ Concluído' : 'Marcar dia como concluído';
-}
-
-function renderCalendar(){
-  const cal = document.getElementById('calendar');
-  cal.innerHTML = '';
-  const today = todayISO();
-  DATA.forEach(row=>{
-    const iso = row[0];
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-    if(iso===today) cell.classList.add('today');
-    if(doneMap[iso]) cell.classList.add('done');
-    if(iso>today) cell.classList.add('future');
-    cell.title = fmtDate(iso)+' — '+row[2];
-    cell.addEventListener('click', ()=>{
-      renderDay(iso);
-      showPeek(iso);
-      window.scrollTo({top:0, behavior:'smooth'});
-    });
-    cal.appendChild(cell);
-  });
-}
-
-function showPeek(iso){
-  const box = document.getElementById('peekBox');
-  const entry = DATA_MAP[iso];
-  if(!entry){ box.style.display='none'; return; }
-  box.style.display='block';
-  box.textContent = fmtDate(iso)+' — '+entry.foco+(notesMap[iso] ? ' · nota salva ✓' : '');
-}
-
-function toast(msg){
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 1800);
-}
-
-document.getElementById('saveNoteBtn').addEventListener('click', async ()=>{
-  notesMap[currentDate] = document.getElementById('noteInput').value;
-  await saveNotes();
-  toast('Anotação salva.');
-});
-
-document.getElementById('noteInput').addEventListener('input', async ()=>{
-  notesMap[currentDate] = document.getElementById('noteInput').value;
-  await saveNotes();
-});
-
-document.getElementById('markDoneBtn').addEventListener('click', async ()=>{
-  doneMap[currentDate] = !doneMap[currentDate];
-  await saveDone();
-  document.getElementById('streakNum').textContent = computeStreak();
-  renderDay(currentDate);
-  renderCalendar();
-  toast(doneMap[currentDate] ? 'Dia marcado como concluído!' : 'Marcação removida.');
-});
-
-document.getElementById('copyPromptBtn').addEventListener('click', ()=>{
-  const entry = DATA_MAP[currentDate];
-  let prompt;
-  if(entry){
-    prompt = `Estou no dia ${fmtDate(entry.date)} do meu roadmap de transição para Go (Fase ${entry.phase} — ${PHASES[entry.phase]}). A tarefa de hoje é: "${entry.foco}". Ação prevista: ${entry.acao} Recurso sugerido: ${entry.rec}. Pergunta de autoavaliação do dia: "${entry.pergunta}". Me explique tim-tim por tim-tim o que fazer, com exemplos de código em Go quando fizer sentido, e me faça perguntas ao longo do caminho para checar se eu realmente entendi antes de avançar.`;
-  } else {
-    prompt = `Estou seguindo meu roadmap de transição para Go, mas hoje (${fmtDate(currentDate)}) está fora do período mapeado. Me ajude a decidir o que revisar ou adiantar.`;
-  }
-  navigator.clipboard.writeText(prompt).then(()=>toast('Prompt copiado! Cole no chat comigo.'))
-    .catch(()=>toast('Não foi possível copiar automaticamente — selecione o texto manualmente.'));
-});
-
-document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
-document.getElementById('importJsonBtn').addEventListener('click', ()=>{
-  document.getElementById('importJsonInput').click();
-});
-document.getElementById('importJsonInput').addEventListener('change', (e)=>{
-  if(e.target.files && e.target.files[0]){
-    importJSON(e.target.files[0]);
-    e.target.value = '';
-  }
+  reader.readAsText(file); ev.target.value='';
 });
 
 (async function init(){
   await loadState();
-  document.getElementById('streakNum').textContent = computeStreak();
-  renderDay(todayISO());
-  renderCalendar();
+  currentDate = firstPending();
+  renderAll(); renderExtras(); runSearch();
 })();
 </script>
 </body>
