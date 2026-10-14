@@ -68,6 +68,29 @@ file.
   - Enqueuing `nil` children and then reading `node.Val`.
 - **Problems:** 104 Maximum Depth of Binary Tree (BFS version).
 
+## Linked list, in-place reversal — "turn the arrows around"
+
+- **Signal:** a singly linked list that must be reversed (whole or in
+  part), with O(1) extra space or "in place" in the statement.
+- **Core idea:** three pointers. Every iteration: save `next := curr.Next`,
+  turn `curr.Next = prev`, then `prev = curr` and `curr = next`. Invariant:
+  `prev` heads the reversed part, `curr` heads the rest, nothing is lost.
+  When `curr` is nil, `prev` is the new head.
+- **Go tools:**
+  - `var prev *ListNode` (nil is the zero value; `= nil` is redundant).
+  - `for curr := head; curr != nil; curr = curr.Next` to walk a list.
+  - A pointer argument is a copy: changing `node.Next` is visible to the
+    caller, reassigning `head` is not. Return the new head instead.
+- **Complexity:** O(n) time (each node once, constant work). O(1) extra
+  space iterative; O(n) recursive (one stack frame per node, since a list
+  is a skewed tree).
+- **Traps:**
+  - Turning the arrow before saving `next`: the rest of the list is lost
+    silently and the function returns only the first node.
+  - Walking with `head` itself and losing the start of the list.
+  - Corner cases: empty list, one node, two nodes.
+- **Problems:** 206 Reverse Linked List.
+
 ## DFS vs BFS — choosing
 
 | Tree shape | DFS: O(h) | BFS: O(w) |
