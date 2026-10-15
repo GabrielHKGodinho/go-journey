@@ -93,10 +93,65 @@ file.
 
 ## DFS vs BFS — choosing
 
-| Tree shape | DFS: O(h) | BFS: O(w) |
-|---|---|---|
-| skewed (a linked list) | O(n), worst | O(1), best |
-| balanced / full | O(log n), best | O(n), worst |
+| Tree shape | DFS recursive: O(h) | DFS iterative: O(h) | BFS: O(w) |
+|---|---|---|---|
+| skewed (a linked list) | O(n), worst | O(1), best | O(1), best |
+| balanced / full | O(log n), best | O(log n) | O(n), worst |
+| comb (a leaf on the left of every level) | O(n) | O(n), worst | O(1) |
 
 Same algorithm, different container: a stack (LIFO) gives DFS, a queue
 (FIFO) gives BFS.
+
+## Stack — "match with the most recent unmatched thing"
+
+- **Signal:** nested or paired structure (brackets, tags, `3[a2[c]]`), or
+  "undo the last step": every new item must be checked against the **most
+  recent one still open**.
+- **Core idea:** push what is still open; when a closing item arrives,
+  compare it with the top and pop. Whatever is left at the end was never
+  closed.
+- **Go tools:**
+  - The stack is a slice with the top at the **end**:
+    `stack = append(stack, x)` to push, `stack[len(stack)-1]` to peek,
+    `stack = stack[:len(stack)-1]` to pop. Pop copies nothing, O(1); push
+    is O(1) amortized. A top at the front would copy everything per push.
+  - A popped element still sits in the backing array. With pointers in a
+    long-lived stack, set `stack[len(stack)-1] = nil` before popping so the
+    GC can free it (go.dev/wiki/SliceTricks).
+  - `map[closer]opener` turns one case per type into one lookup.
+- **Complexity:** O(n) time, one push or pop per item. O(n) space in the
+  worst case, when everything stays open.
+- **Traps:**
+  - Peeking or popping an empty stack: `stack[-1]` panics in Go (PHP and
+    JS just return null / undefined). Check `len(stack) == 0` first.
+  - Forgetting the final `len(stack) == 0`: "(" is not valid.
+  - An early exit (odd length) can hide a guard from the tests: test the
+    empty-stack case with an even-length input like ")(".
+- **Problems:** 20 Valid Parentheses. Next: 394 Decode String, 232
+  Implement Queue using Stacks.
+
+## Tree DFS (iterative) — "DFS without recursion"
+
+- **Signal:** same as recursive DFS, plus "without recursion", very deep
+  input, or the interviewer's follow-up "can you do it iteratively?".
+- **Core idea:** replace the call stack with your own slice. A loop has
+  no "way back" for return values, so the computation turns **top-down**:
+  each stack item carries what the frame used to carry (the node and its
+  depth), children get `depth+1` when pushed, and a variable keeps the
+  best answer so far.
+- **Go tools:**
+  - A small struct for the item, declared inside the function when nothing
+    else needs it: `type frame struct { node *TreeNode; depth int }`.
+  - `[]frame{{node: root, depth: 1}}`: the inner type name can be omitted.
+  - Builtin `max` (Go 1.21+).
+- **Complexity:** O(n) time. O(h) space: the current path plus at most one
+  waiting sibling per level. Measured: full tree (10 levels) peaks at 10,
+  skewed at 1, comb at about n/2.
+- **Traps:**
+  - Pushing `nil` children and then reading `top.node.Left`: filter before
+    pushing, or skip `nil` after popping, but pick one.
+  - Order matters when the output is a list: for pre-order (node, left,
+    right), push **right first**, so left is popped first (LIFO).
+  - Explaining its space with the BFS argument ("the last level holds n/2
+    nodes"): the DFS stack never holds a whole level.
+- **Problems:** 104 Maximum Depth of Binary Tree (iterative version).

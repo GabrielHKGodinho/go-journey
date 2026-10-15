@@ -22,6 +22,48 @@ func maxDepth(root *TreeNode) int {
 	return 1 + max(maxDepth(root.Left), maxDepth(root.Right))
 }
 
+// maxDepthIterative is the same DFS with an explicit stack instead of the
+// call stack. With no "way back" for return values, it works top-down:
+// every frame carries its own depth, children get depth+1 when pushed, and
+// best keeps the largest depth seen.
+//
+// Time: O(n), every node is pushed and popped once, both O(1).
+// Space: O(h). The stack holds the current path plus at most one waiting
+// sibling per level, never a whole level. Measured peaks: full tree with
+// 10 levels = 10, skewed = 1 (better than the recursive version), and a
+// "comb" (a leaf hanging on the left of every level) ≈ n/2, the worst case.
+func maxDepthIterative(root *TreeNode) int {
+	if root == nil {
+		return 0
+	}
+
+	// frame is local to this function: nothing else needs it.
+	type frame struct {
+		node  *TreeNode
+		depth int
+	}
+
+	stack := []frame{{node: root, depth: 1}}
+	best := 0
+
+	for len(stack) > 0 {
+		top := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		best = max(best, top.depth)
+
+		// Push only real children, so a popped frame never holds nil.
+		if top.node.Left != nil {
+			stack = append(stack, frame{node: top.node.Left, depth: top.depth + 1})
+		}
+		if top.node.Right != nil {
+			stack = append(stack, frame{node: top.node.Right, depth: top.depth + 1})
+		}
+	}
+
+	return best
+}
+
 // maxDepthBFS returns the same answer by counting levels with a queue.
 //
 // Time: O(n), every node is enqueued and dequeued once, and both are O(1).

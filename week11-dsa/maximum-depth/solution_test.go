@@ -51,6 +51,17 @@ func skewed(n int) *TreeNode {
 	return root
 }
 
+// comb builds a spine of `levels` nodes going right, with a leaf hanging on
+// the left of every spine node except the last. It is the worst case for
+// the iterative DFS stack: every level leaves its left leaf waiting.
+func comb(levels int) *TreeNode {
+	root := &TreeNode{}
+	for range levels - 1 {
+		root = &TreeNode{Left: &TreeNode{}, Right: root}
+	}
+	return root
+}
+
 func TestFromLevelOrder(t *testing.T) {
 	//       1
 	//      / \
@@ -91,6 +102,7 @@ func TestMaxDepth(t *testing.T) {
 		// nodes expose it). This shape makes it return 4.
 		{"uneven levels break a BFS without snapshot", fromLevelOrder([]int{1, 2, 3, null, 4, 5, 6}), 3},
 		{"skewed, LeetCode maximum size", skewed(10_000), 10_000},
+		{"comb, worst case for the iterative stack", comb(5_000), 5_000},
 	}
 
 	solutions := []struct {
@@ -98,6 +110,7 @@ func TestMaxDepth(t *testing.T) {
 		fn   func(*TreeNode) int
 	}{
 		{"DFS", maxDepth},
+		{"DFS iterative", maxDepthIterative},
 		{"BFS", maxDepthBFS},
 	}
 
