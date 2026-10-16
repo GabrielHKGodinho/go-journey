@@ -155,3 +155,58 @@ Same algorithm, different container: a stack (LIFO) gives DFS, a queue
   - Explaining its space with the BFS argument ("the last level holds n/2
     nodes"): the DFS stack never holds a whole level.
 - **Problems:** 104 Maximum Depth of Binary Tree (iterative version).
+
+## Backtracking — "list every subset / combination / permutation"
+
+- **Signal:** the output is **all** the ways to choose or arrange items
+  (subsets, combinations, permutations, every valid string). The answer
+  itself is exponential, so nothing faster than enumerating exists.
+- **Core idea:** a DFS over a tree of decisions. Before coding, answer on
+  paper, with a small input:
+  1. What does one **level** of the tree decide?
+  2. What are the **choices** at that level?
+  3. When is a node a **leaf** (the answer is complete)?
+  Then: choose, explore, undo. One `path` is reused by every branch; the
+  undo runs on the way back up and restores the state the node arrived
+  with.
+- **Go tools:**
+  - Recursive closure: `var backtrack func(i int)` first, then assign.
+  - `path` is a stack: `append` to choose, `path[:len(path)-1]` to undo.
+  - Store `slices.Clone(path)` at the leaf, never `path` itself.
+  - `1<<n` is 2^n: pre-size the result when the count is known.
+  - Debug a trace by indenting with depth:
+    `fmt.Printf("%s%v\n", strings.Repeat("  ", i), path)`.
+- **Complexity:** subsets: O(n·2^n) time (2^n leaves, an O(n) clone each),
+  O(n) extra space beyond the output (path plus n+1 frames).
+- **Traps:**
+  - Forgetting the undo. If the leaf test is `len(path) == n`, the path
+    grows past n and the recursion never stops (stack overflow, a fatal
+    error). If the level is a parameter `i`, it stops but returns wrong
+    subsets.
+  - Counting calls without the base cases: `walk(n)` with two calls makes
+    2^(n+1)-1 calls, and its peak stack is n+1 frames, not n.
+  - Hard to trace by hand: after a call returns, you must remember **where
+    in the parent** you resume (after the first call or the second) and
+    what `path` held then. Draw the tree; do not keep it in your head.
+- **Problems:** 78 Subsets (backtracking and iterative). Next: 77
+  Combinations, 22 Generate Parentheses, 46 Permutations.
+
+## Slice aliasing — "is this array only mine?"
+
+Not a problem pattern, a Go trap that broke 78 (and 49 on 09/10).
+
+- A slice is a header `{ptr, len, cap}`. Copying it (assignment, passing
+  it, storing it in another slice) copies the header, not the array.
+- `append(s, x)` writes **into s's array** when `len < cap`, and does not
+  change `s` itself (its len stays the same). Two appends on the same base
+  with spare capacity write the **same slot**: `b := append(a, 1)` then
+  `c := append(a, 2)` leaves both as `[... 2]`.
+- `slices.Clone` copies one level. On a `[][]int` it copies the inner
+  headers, so the inner arrays are still shared (like `[...grid]` in JS).
+  Clone the slice that is about to grow or be stored.
+- The bug is intermittent: it only shows when some array has spare
+  capacity and is appended to twice. Test sizes beyond the examples, or
+  test the cause directly (no two results share `&s[0]`).
+- Rule: `append(a, x)` without `a = ...` is a warning sign. Either you
+  want a new slice derived from `a` (clone first), or you forgot to
+  reassign.
