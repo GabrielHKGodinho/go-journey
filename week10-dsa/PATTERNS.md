@@ -90,6 +90,18 @@ Before submitting, every time:
   - Escaping `;` without escaping `\`.
   - One wrong length silently corrupts everything after it.
   - `strconv.Atoi` accepts `"-1"`.
+- **Complexity** (k = words, S = total characters, n = len(encoded)):
+  - Encode: O(S + k) time. O(1) extra if the output is not counted, but
+    without `Grow` the builder doubles and leaves garbage buffers (peak
+    close to 2x the output). To pre-size, count the digits with a loop,
+    not `len(strconv.Itoa(...))`, which allocates for lengths ≥ 100.
+  - Decode: lead with **O(n) time and space** (the input size). Refine
+    if asked: O(k + prefix digits) time, because it reads only the
+    prefixes and skips the contents, and O(k) space for string headers,
+    because substrings share bytes. Worst case: many empty words
+    (`"0;"` is 2 bytes, so k = n/2).
+- **Tests:** aim at the weak points of the chosen design (delimiter inside
+  a word, multi-digit length) and always include `[]` and `[""]`.
 - **Problems:** 271 Encode and Decode Strings.
 
 ---
@@ -98,5 +110,6 @@ Before submitting, every time:
 
 | Problem | First attempt | Re-solve | Gap | Notes |
 |---|---|---|---|---|
-| 271 Encode/Decode | > 30 min, not solved | 12:31, 1 submit | ~18 h | Time inflated by recall. Decode index math was rebuilt, not remembered. Re-solve again on Fri 16/10. |
+| 271 Encode/Decode | > 30 min, not solved | 12:31, 1 submit | ~18 h | Time inflated by recall. Decode index math was rebuilt, not remembered. Re-solved again on 16/10 (row below). |
 | 49 Group Anagrams | 15:00, 1 submit | 11:31, 1 submit | 2 days | Inserting into `[][]string` is no longer a blocker. |
+| 271 Encode/Decode (2nd) | 12:31, 1 submit (09/10) | 13:27, 1 submit | 7 days | Rebuilt alone after a week: real retention, not recall. Weak spot is now the Big-O *reasons* (said decode space comes from copying substrings; it does not). Own tests missed `[]` and `[""]`. |

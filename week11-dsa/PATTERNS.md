@@ -188,6 +188,13 @@ Same algorithm, different container: a stack (LIFO) gives DFS, a queue
   - Hard to trace by hand: after a call returns, you must remember **where
     in the parent** you resume (after the first call or the second) and
     what `path` held then. Draw the tree; do not keep it in your head.
+  - Calling the undo a choice. In subsets the choices are **include** and
+    **skip**; popping the last element is the undo of include, so the
+    skip branch sees the path without it.
+  - Subsets vs permutations: same template, different level. Subsets:
+    "is `nums[i]` in or out?" (2 choices, 2^n leaves). Permutations:
+    "which unused element goes in position k?" (n−k choices, n! leaves,
+    track the used ones).
 - **Problems:** 78 Subsets (backtracking and iterative). Next: 77
   Combinations, 22 Generate Parentheses, 46 Permutations.
 
@@ -210,3 +217,25 @@ Not a problem pattern, a Go trap that broke 78 (and 49 on 09/10).
 - Rule: `append(a, x)` without `a = ...` is a warning sign. Either you
   want a new slice derived from `a` (clone first), or you forgot to
   reassign.
+- The breaking size depends on the design, so pick the test from the code
+  you wrote, not from the last bug. Backtracking without the clone at the
+  leaf already breaks at n = 2: `[1,2]` gives `[[2 2] [2] [2] []]` (the
+  skip-1 branch writes 2 into slot 0 of the shared array). The cascade
+  bug from 15/10 needed n = 5. Use the smallest failing input: it is the
+  one you can trace by hand.
+
+---
+
+## Re-solve log
+
+| Problem | First attempt | Re-solve | Gap | Notes |
+|---|---|---|---|---|
+| 78 Subsets (backtracking) | 17 min, 2 submits, with help (15/10) | 15:12, 1 submit | ~24 h | Wrote the three template answers before coding. Left a debug `fmt.Println` in, shadowed the function name with the result variable. Said "remove" was a choice (it is the undo). Output size is O(n·2^n), not 2^n. |
+
+## Pattern recognition drills
+
+Unseen problems, name the pattern and the signals only (about 1 min each).
+
+| Date | Problems | Pattern right | Clean signals | Takeaway |
+|---|---|---|---|---|
+| 16/10 | 128, 102, 15, 21, 46, 150 | 6/6 (46 named "subsets / combinations") | 2/6 | Constraints carry the strongest signal ("must be O(n)", "no duplicate triplets", "reuse the nodes"). Ordering ≠ combination. Stack signal = "matches the **most recent** unmatched item". |
