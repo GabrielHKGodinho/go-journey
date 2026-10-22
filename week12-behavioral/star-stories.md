@@ -21,7 +21,7 @@ Behavioral interview prep, written in the STAR format
 |---|---|---|---|
 | 1 | Bank reconciliation (ERP) | Technical challenge, ownership, trade-offs | Done |
 | 2 | Teammate left out of decisions (Apple Developer Academy) | Conflict, leadership without authority, self-awareness | Done |
-| 3 | A failure and what I learned | Accountability, growth | To do |
+| 3 | The report that took the system down (ERP) | Accountability, learning from failure, scaling | Done |
 | 4 | Tight deadline | Prioritization | To do |
 | 5 | Disagreeing with someone on the team | Communication, influence | To do |
 | 6 | Full ownership of a problem | Ownership | To do |
@@ -317,6 +317,156 @@ something's*. Voiced: *the, that, there, then, other, with*. Pairs:
 
 ---
 
+## Story #3: The report that took the system down
+
+**Answers questions like:**
+- "Tell me about a time you failed."
+- "Tell me about a mistake you made in production."
+- "Tell me about a time something you built didn't scale."
+- "What's a lesson you learned the hard way?"
+
+**Rules specific to failure stories:**
+- Pick a real failure with real consequences: a goal I didn't reach, not a slip.
+- The sentence about the cause has "I" as the subject and my decision as the verb.
+  Context (the data volume) shows up once, as a fact, never as the excuse.
+- No "but" right after admitting something.
+- The failure is ~30% of the answer; what I did about it and the lesson are ~70%.
+- The lesson needs proof: where I applied it afterwards.
+
+### Skeleton (this is what I look at)
+
+```
+S (~45 words)
+  - only engineer on the client: audio news for radio stations
+  - report: all published stories + total downloads
+
+T (~10 words)
+  - goal: a report that works AT PRODUCTION SCALE
+
+FAILURE (~95 words)
+  - "That's where I failed."
+  - sorted by downloads → aggregate 11 MILLION rows (no plural on "million")
+  - paginated, but page 1 still had to add up every story
+  - AND I only tested with dev data (< 1,000 rows)
+  - no date filter → whole system down ~5 min
+  - I restarted the database (didn't know how to cancel one query)
+
+A (~85 words): contain → fix → root cause
+  1. RIGHT AWAY: told the client "it was my report" → took it offline
+  2. THEN: at least one filter required (date, author or client) → back online
+  3. MONTHS LATER, root cause: stored downloads column, cron every 5 min
+     → sorting just reads a column
+     → checked with the client that 5-minute-old numbers were fine
+
+R (~8 words)
+  - never brought the system down again   ← easy to forget: say it right after 3
+
+LESSON (~70 words)
+  - never write a list query without a limit
+  - user picks at least one filter, OR there's a maximum page size
+  - sort by numbers I store, not numbers I calculate every time
+  - proof: law firms' ERP (hundreds of consultations/day) + Go project (default 20, cap 100)
+  - next: query timeout
+```
+
+If the story runs over 2:10, cut the "checked with the client" sentence first
+(it's also a follow-up below).
+
+### Full text (~310 words, reference only)
+
+> I was the only engineer responsible for a client that publishes audio news
+> for radio stations. They asked me for a report listing every published
+> story with its total number of downloads. My goal was a report that would
+> work at their production scale.
+>
+> That's where I failed. I designed the report to sort by downloads, and that
+> number came from aggregating a table with more than 11 million rows. It was
+> paginated, but to build even the first page the database had to add up
+> every story. And I only tested it with development data, which had fewer
+> than a thousand rows. Once it was in production, someone ran it without a
+> date filter, and the whole system went down for about five minutes. I
+> restarted the database, because back then I didn't know I could cancel a
+> single query.
+>
+> Right away, I told the client the problem was the report I had built, and I
+> took it offline. Then I made at least one filter required, date, author or
+> client, and put it back online. A few months later I went back to the root
+> cause: I added a downloads column to each story, updated by a cron job
+> every five minutes, so sorting just reads a column. I checked with the
+> client first that five-minute-old numbers were fine for a report.
+>
+> It never brought the system down again. What I learned is to never write a
+> list query without a limit. Either the user has to pick at least one
+> filter, or there's a maximum page size. And I sort by numbers I store, not
+> numbers I calculate every time. I applied the same rule in an ERP for law
+> firms with hundreds of consultations a day, and my Go project has a default
+> page size of 20 and a cap of 100. Next, I'm adding a query timeout there.
+
+### Follow-ups
+
+**"How did you find out?"**
+> The client told me the system was down. I checked the database on our
+> hosting panel, saw one connection stuck on that query, and restarted the
+> database.
+
+**"Why did you restart the whole database instead of killing the query?"**
+> Honestly, at the time I didn't know I could cancel a single query. Today
+> I'd use pg_cancel_backend or pg_terminate_backend on that process. It takes
+> seconds and doesn't take the rest of the system down. Those five minutes
+> of downtime were partly the cost of not knowing that.
+
+**"Was the required filter enough?"**
+> Not completely. It made the problem less likely: a filter by client alone
+> could still add up millions of rows for a big client. What fixed the cause
+> was storing the download count, so sorting stopped depending on the big
+> table.
+
+**"Doesn't the cron job make the numbers wrong?"**
+> They're at most five minutes behind. For a downloads report that's fine.
+> Nobody makes a decision based on the exact minute, and I checked that with
+> the client before doing it. In exchange, the database never sums millions
+> of rows to open the screen again.
+
+**"Was there anything other people could have done differently?"**
+> Not really. I was the only engineer on that client, so the design, the
+> testing and the release were all mine. That's one of the reasons I picked
+> this story: there's no one else to point at.
+
+**"How would you protect against this in Go today?"**
+> Three layers. Every list endpoint has a default page size and a hard cap,
+> and it's always scoped to a user or a required filter. Each query gets its
+> own deadline with context.WithTimeout, so the driver cancels it in the
+> database if it runs too long. And the database itself has a
+> statement_timeout as a safety net for any code path that forgot the
+> deadline.
+
+**"What would you do differently?"**
+> Design the limit in from the start instead of adding it after the
+> incident. Test list screens with a production-like volume of data, even
+> if I have to generate it. And cancel the single query instead of
+> restarting the database.
+
+### Pronunciation
+
+| Word | Sounds like |
+|---|---|
+| aggregating | AG-ri-gay-ting |
+| paginated | PAJ-ih-nay-tid |
+| consultations | kon-sul-TAY-shunz |
+| column | KOL-um (silent n) |
+| required | rih-KWY-erd |
+| database | DAY-tuh-bays |
+| cron | kron |
+| million | MIL-yun (no plural before a noun: "11 million rows") |
+
+### Practice log
+
+| Date | Time | Missed / stuck on |
+|---|---|---|
+| 2026-10-21 | 1:57 | Left out the Result line ("never brought the system down again"); stuck on "every list query has to be bounded by design…" → lesson rewritten in simpler words |
+
+---
+
 ## Story bank (not written yet)
 
 - **B2B vs B2C split → customer research** (Apple Developer Academy). The
@@ -325,3 +475,12 @@ something's*. Voiced: *the, that, there, then, other, with*. Pairs:
   businesses the team agreed on small businesses. Fits: "Tell me about a
   time you used data to make a decision", "…convinced your team", and
   possibly #5 (disagreeing with someone).
+
+- **Filter built in the wrong system** (ERP). A client covering elections
+  asked for a filter by election round. I assumed it was for the website and
+  shipped it there; it was meant for the moderation screen in the ERP, so I
+  had to redo it. Fits: "Tell me about a time you misunderstood a
+  requirement." Lesson: ask instead of assuming when something isn't clear.
+- **Dev and production on different PHP versions** (ERP). Something worked in
+  development and broke in production because I didn't check the versions
+  matched. Smaller; fits "environment parity" follow-ups.
