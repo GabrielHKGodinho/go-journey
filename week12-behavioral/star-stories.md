@@ -13,6 +13,8 @@ Behavioral interview prep, written in the STAR format
   clear which part was mine.
 - **Every number must survive "how do you know?"** If I can't say where a
   number came from, it doesn't go in the story.
+- **Pause instead of "So".** Starting every sentence with "So" sounds
+  like hesitation; a half-second pause sounds confident.
 - **Details are follow-ups, not part of the story.** Keep the story at the
   level of decisions; each detail left out is a follow-up where I can
   go deep.
@@ -22,9 +24,9 @@ Behavioral interview prep, written in the STAR format
 | 1 | Bank reconciliation (ERP) | Technical challenge, ownership, trade-offs | Done |
 | 2 | Teammate left out of decisions (Apple Developer Academy) | Conflict, leadership without authority, self-awareness | Done |
 | 3 | The report that took the system down (ERP) | Accountability, learning from failure, scaling | Done |
-| 4 | Tight deadline | Prioritization | To do |
-| 5 | Disagreeing with someone on the team | Communication, influence | To do |
-| 6 | Full ownership of a problem | Ownership | To do |
+| 4 | Year-end reports on a tight deadline (ERP) | Prioritization, scope negotiation, customer focus | Done |
+| 5 | Polling vs. webhook (ERP) | Disagreeing with a manager, influence, designing for failure | Done |
+| 6 | Production passwords out of git (ERP) | Ownership, security, process improvement | Done |
 
 ---
 
@@ -467,14 +469,407 @@ If the story runs over 2:10, cut the "checked with the client" sentence first
 
 ---
 
+## Story #4: Year-end reports on a tight deadline
+
+**Answers questions like:**
+- "Tell me about a time you worked under a tight deadline."
+- "Tell me about a time you had to prioritize."
+- "Tell me about a time you pushed back on a requirement."
+- "Tell me about a time you found a simpler solution than what was asked."
+
+**Rules specific to deadline stories:**
+- The action is a decision about scope, not extra hours.
+- The Situation has to show *why* the deadline was tight.
+- Say who I told, and when.
+
+### Skeleton (this is what I look at)
+
+```
+S (~45 words)
+  - law firm client (ERP), early December 2024
+  - asked for a reports feature: 5 years of service records + courses
+  - for their year-end conference in January, and they wanted to review it first
+    → ~15 business days, with the holidays
+  - as a feature: lots of data, many screens and filters
+    + I had open tickets from other clients
+
+T (~20 words)
+  - my job: get them what they needed in time,
+    without leaving my other clients waiting
+
+A (~130 words)
+  1. KEY INSIGHT: the conference needed the NUMBERS, not a screen
+     → I proposed: manual report now, the feature next month
+     → explained why on a call; client agreed — they just needed the data
+  2. SQL queries on production (off-hours) → document in THEIR layout → PDF
+     ~1 week
+  3. Accuracy: checked small samples myself + client reviewed before the conference
+
+R (~45 words)
+  - delivered on time, reviewed, used at the conference
+  - next month: shipped the feature, as agreed
+  - BUILT ON THE SAME QUERIES the client had already validated
+    → the workaround made the real feature safer, not wasted work
+```
+
+If the story runs over 2:10, cut "(off-hours)" first (it's also a follow-up below).
+
+### Full text (~300 words, reference only)
+
+> At the time, I was working with a law firm client on their ERP. In early
+> December 2024, they asked for a reports feature: five years of service
+> records plus courses, for their year-end conference in January, and they
+> wanted to review it first. That gave me about 15 business days because of
+> the holidays, and the feature involved lots of data, many screens and
+> filters. It also wasn't my only task — I had open tickets from other
+> clients.
+>
+> My goal was to get them what they needed in time, without leaving my other
+> clients waiting.
+>
+> The key thing I realized was that for the conference they needed the
+> numbers, not a new screen. So I proposed a manual report now and the
+> feature next month, and explained why on a call. The client agreed — they
+> just needed the data. I wrote SQL queries on production, off-hours because
+> of the volume, put the results into a document in their layout and
+> exported it as a PDF. That took about a week. To make sure the numbers were
+> right, I checked small samples myself and sent it to the client to review
+> before the conference.
+>
+> In the end, it was delivered on time, reviewed, and they used it at the
+> conference. The next month I shipped the feature as agreed — and the best
+> part was that it was built on the same queries the client had already
+> validated, so the workaround wasn't wasted work; it made the feature safer.
+
+### Follow-ups
+
+**"Why not just build the feature faster, or work extra hours?"**
+> Because the feature wasn't what they needed for the conference — the
+> numbers were. Rushing many screens and filters in two weeks, with other
+> clients waiting, would risk bugs in exactly the data they were going to
+> present. The manual report delivered what mattered, with less risk.
+
+**"You ran queries directly on production?"**
+> Yes, off-hours, because they went over five years of data. I'd already
+> learned that lesson the hard way — a report of mine once took a system
+> down — so I made sure they ran when nobody was using it.
+
+**"How did you know the numbers were right?"**
+> Two checks. I compared small samples against records I could verify in
+> the system, and I sent the report to the client to review before the
+> conference. They knew their numbers better than anyone.
+
+**"How did the client feel about not getting the feature on time?"**
+> They took it well. I explained why on a call, and they only needed the
+> data for the conference. The feature came the next month, as we'd agreed.
+
+**"What would you do differently?"**
+> Most of that week went into building the document in their layout. I'd
+> send the raw numbers in a spreadsheet first, for the client to validate,
+> and only then do the layout. If a number was wrong, we'd find out before
+> the formatting was done.
+
+**To prepare:** how I handled the other clients' tickets that week (the Task
+says "without leaving my other clients waiting" — be ready to back it up).
+
+### Pronunciation
+
+| Word | Sounds like |
+|---|---|
+| queries | KWEER-eez (not "kerries") |
+| business days | BIZ-ness days (two syllables) |
+| workaround | WURK-a-round |
+| conference | KON-fer-ence (stress on the first syllable) |
+| layout | LAY-out |
+| accuracy | AK-yur-uh-see |
+| validated | VAL-ih-day-tid |
+
+### Practice log
+
+| Date | Time | Missed / stuck on |
+|---|---|---|
+| 2026-10-23 | 1:50 | Nothing left out; "they thought it was quicker to develop the feature" said the opposite (cut it); "secure" → "safer"; working **with** a client; agree (no object); 8 sentences starting with "So" |
+
+---
+
+## Story #5: Polling vs. webhook
+
+**Answers questions like:**
+- "Tell me about a time you disagreed with your manager."
+- "Tell me about a time you convinced someone to change their mind."
+- "Tell me about a technical decision you pushed back on."
+- "Tell me about a time you designed for failure."
+
+**Rules specific to disagreement stories:**
+- Show the other person's side first. Their reason was fair.
+- Convince with something concrete (an example, a cost, a risk), never by insisting.
+- Answer their concern, don't just win the argument.
+
+### Skeleton (this is what I look at)
+
+```
+S (~40 words)
+  - this year, same law firm client (ERP)
+  - consultants open a service record for every phone call (200+ a day) — by hand
+    → calls could be missed; goal: automate it
+  - my manager's plan: POLL the phone provider's API
+
+T (~20 words)
+  - I was building it, and I believed polling was the wrong design
+    → my job: convince him, or be convinced
+
+A (~140 words)
+  1. FIRST, HIS SIDE: polling is simpler and doesn't depend on the provider
+     — a fair point
+  2. MY CONCERNS:
+     - load: most requests come back with "nothing changed"
+     - delay: a short call could end before the next check,
+       and consultants would wait for it to start the record
+  3. PROPOSAL: webhook for real time + slow polling (every 10 min) as a SAFETY NET
+     → showed an example of the webhook code
+  4. He pushed back: "it depends on them" → I walked through load + delay
+     + the safety net COVERED HIS CONCERN → he agreed
+  5. I emailed the provider → they agreed, ~2 weeks on their side;
+     I built the endpoint (token auth)
+
+R (~50 words)
+  - the call shows up on the consultant's screen as they answer it
+  - in production since then, still in use; client liked it
+  - missed by the webhook → pending-calls screen + warning → never lost silently
+  - LESSON: disagree with something concrete, and address the other person's concern
+```
+
+If the story runs over 2:10, cut "(token auth)" first, then "~2 weeks on their side".
+If #4 was told in the same interview, open with "With that same law firm client…".
+
+### Full text (~330 words, reference only)
+
+> Earlier this year, with that same law firm client, the consultants had to
+> open a service record by hand for every phone call they received — over
+> 200 calls a day. Doing it by hand meant calls could be missed, so the goal
+> was to automate it. My manager's plan was to poll the phone provider's API.
+>
+> I was the one building it, and I believed polling was the wrong design, so
+> my job was to convince him — or be convinced.
+>
+> First, I tried to understand his side: polling is simpler and doesn't
+> depend on the provider, and that's a fair point. But I had two concerns.
+> Most requests would come back with nothing changed, wasting server
+> resources. And there's a delay: a short call could end before the next
+> check, and consultants would have to wait for it before they could start
+> filling in the record.
+>
+> What I proposed was a webhook for real time, plus a slow polling job every
+> ten minutes as a safety net, so any call the webhook missed would still be
+> caught. I showed him an example of the webhook code. He pushed back: "it
+> depends on them." I walked him through the load and the delay again, and
+> showed him that the safety net already covered his concern — and he
+> agreed. I emailed the provider, they agreed too, and it took them about two
+> weeks on their side. Meanwhile, I built the endpoint, with token
+> authentication.
+>
+> In the end, the call shows up on the consultant's screen as they answer the
+> phone. It's been in production since then, and the client said they liked
+> it. Any call the webhook misses goes to a pending-calls screen, with a
+> warning on the main screen, so no call is ever lost silently. What I took
+> from it is to disagree with something concrete, and to address the other
+> person's concern.
+
+### Follow-ups
+
+**"So you ended up polling anyway?"**
+> Yes, but a very different kind. To be close to real time, polling would
+> have to run every few seconds. The safety net runs every ten minutes —
+> six requests an hour — because it doesn't need to be fast. Real time comes
+> from the webhook; the polling only makes sure nothing gets lost.
+
+**"How do you make sure a webhook call really comes from the provider?"**
+> The provider sends a token with every call, and the endpoint rejects any
+> request without the right one. If the provider supported it, I'd also
+> verify a signature of the request body (HMAC), so a leaked token alone
+> wouldn't be enough.
+
+**"What if your manager had still said no?"**
+> Then I'd build the polling, and build it well. It was his call to make,
+> and his concern was legitimate. I'd probably suggest we measure the load
+> and the delay after a few weeks, so we could revisit it with real numbers.
+
+**"How did it affect your relationship with your manager?"**
+> It stayed the same. It was a technical discussion, not a personal one, and
+> we kept working together normally.
+
+**"What would you do differently?"**
+> From what consultants see, most calls arrive through the webhook, but we
+> don't measure it. I'd track how many calls only arrive through the safety
+> net, so we'd have a number for how reliable the webhook is, instead of a
+> feeling.
+
+**To prepare:** what happens if the provider sends the same webhook twice
+(does the system create two records, or is the call ID unique?).
+
+### Pronunciation
+
+| Word | Sounds like |
+|---|---|
+| polling | POH-ling ("poll", not "pull") |
+| webhook | WEB-hook (the h is pronounced) |
+| provider | pro-VY-der |
+| concerns | kon-SURNZ |
+| pushed back | PUSHT back |
+| reliable | ri-LY-uh-bl |
+| endpoint | END-point |
+| safety net | SAYF-tee net (two syllables in "safety") |
+| caught | kawt (past of "catch") |
+
+### Practice log
+
+| Date | Time | Missed / stuck on |
+|---|---|---|
+| 2026-10-23 | 2:01 | Nothing left out; added the consultant-waiting argument (kept); "his side was" → "I tried to understand his side"; tangled the "safety net covered his concern" line; "is in production since" → "has been in production since then"; 12 "So" |
+
+---
+
+## Story #6: Production passwords out of git
+
+**Answers questions like:**
+- "Tell me about a time you took ownership of a problem."
+- "Tell me about something you fixed that wasn't your job."
+- "Tell me about a time you improved a process."
+- "Tell me about a security issue you found."
+
+**Rules specific to ownership stories:**
+- Open the Task with "nobody asked me".
+- Show that I asked before changing something other people depended on.
+- Don't claim the other projects adopted it because of me — I don't know that.
+- Say the gap (no rotation) before the interviewer finds it.
+
+### Skeleton (this is what I look at)
+
+```
+S (~50 words)
+  - 2022, I was an intern, ~1 year in; ERP project for one client
+  - production passwords (database, APIs) were committed to the GitHub repo
+    → anyone with access to the repo had the keys to production
+      (and so would anyone who got into one of those laptops or accounts)
+  - deploys: manual FTP upload, overwriting config files
+    → it had ALREADY HAPPENED, more than once: dev config uploaded over production
+
+T (~20 words)
+  - nobody had asked me to fix it — but it was a security risk
+    and a mistake that kept happening → I took it on
+
+A (~110 words)
+  1. FIRST, ASKED MY MANAGER: explained the risk + a better way → approved
+  2. config out of the code:
+     - one .env per environment (phpdotenv)
+     - .env in .gitignore + .env.example (keys, no values)
+     → an FTP upload can't overwrite the environment's config anymore
+  3. removed the passwords from the git history
+     → so they wouldn't keep showing up FROM THEN ON
+
+R (~50 words)
+  - no more deploys with the wrong environment's credentials
+    → deploying got easier and safer, one place per environment
+  - later, the other projects adopted the same setup;
+    new projects start with it
+  - LOOKING BACK: I should have rotated the passwords
+    + automated deploys (GitHub Actions)
+```
+
+If the story runs over 2:10, cut "+ automated deploys" first.
+
+### Full text (~290 words, reference only)
+
+> Back in 2022, I was an intern, about a year into the company, working on an
+> ERP project for one client. I noticed that their production passwords —
+> database and APIs — were committed to the GitHub repository. Anyone with
+> access to the repo had the keys to production, and so would anyone who got
+> into one of those laptops or GitHub accounts. On top of that, deploys were
+> manual FTP uploads, and it had happened more than once that someone
+> uploaded a file with the development passwords over production.
+>
+> Nobody had asked me to fix it, but it was a security risk and a mistake
+> that kept happening, so I took it on.
+>
+> First, I asked my manager. I explained the risk and a better way to do it,
+> and he approved it right away. Then I took the config out of the code: one
+> .env file per environment, using the phpdotenv library, with .env added to
+> the .gitignore, and a .env.example so anyone could see which keys they
+> needed. I also removed the passwords from the git history, so they wouldn't
+> keep showing up for anyone cloning the repo from then on.
+>
+> In the end, we had no more deploys with the wrong environment's
+> credentials, and deploying got easier and safer, with all the passwords in
+> one place per environment. Later, the other projects adopted the same
+> setup, and new projects start with it. Looking back, I should have rotated
+> the passwords. Anyone who had cloned the repo, or simply copied them
+> somewhere, could still use them, so it would have been safer. I'd also
+> have automated deploys with GitHub Actions.
+
+### Follow-ups
+
+**"You removed the passwords from git history. Isn't that enough?"**
+> No. Cleaning the history only stops people from finding the passwords
+> from now on. Anyone who had already cloned the repo still has them. The
+> real fix is to rotate the passwords, and I didn't do that at the time.
+> Today, I'd do it first.
+
+**"Did the other projects adopt it because of you?"**
+> I believe my manager took it from my project, but I can't say for sure.
+> What I know is that the other projects use the same setup now, and new
+> projects start with it.
+
+**"Why did you ask your manager instead of just doing it?"**
+> It changed how the production config and the deploys worked, and other
+> people deployed that project too. They needed to know, and as an intern it
+> wasn't a call I should make alone.
+
+**"How do the passwords get to production now?"**
+> The production .env lives on the server, and it's set up by hand once.
+> It's not in the repo, so a deploy upload never touches it.
+
+**"How would you do it in Go today?"**
+> The same idea: config comes from environment variables, read at startup,
+> and the service refuses to start if a required one is missing. In my Go
+> project, the API returns an error right away if DATABASE_URL or
+> RABBITMQ_URL is empty. Secrets live in the platform (the hosting
+> provider's variables, GitHub Actions secrets), never in the repo.
+
+**"What would you do differently?"**
+> Rotate the passwords right after removing them, and automate the deploy
+> with GitHub Actions, so nobody uploads config files by hand at all.
+
+**To prepare:** how exactly I removed the passwords from the history (git
+filter-repo, BFG, or something else) — check before the next mock.
+
+### Pronunciation
+
+| Word | Sounds like |
+|---|---|
+| .env | dot-EN-vee |
+| .gitignore | dot-GIT-ig-nor |
+| phpdotenv | P-H-P dot env |
+| credentials | kreh-DEN-shulz |
+| intern | IN-turn |
+| rotated | ROH-tay-tid |
+| environment | en-VY-ron-ment |
+| repository | rih-POZ-ih-tor-ee |
+
+### Practice log
+
+| Date | Time | Missed / stuck on |
+|---|---|---|
+| 2026-10-23 | 1:58 | Nothing left out; stuck on the risk sentence (sounded like accusing the client's IT managers → rewritten); "nobody could see past passwords" contradicted the lesson → "from then on"; could **steal**; "it was safer" → "it would have been safer"; 9 "So" |
+
+---
+
 ## Story bank (not written yet)
 
 - **B2B vs B2C split → customer research** (Apple Developer Academy). The
   team was split on the target audience for a loyalty-card app. I
   proposed interviewing potential customers, and after visiting local
   businesses the team agreed on small businesses. Fits: "Tell me about a
-  time you used data to make a decision", "…convinced your team", and
-  possibly #5 (disagreeing with someone).
+  time you used data to make a decision" and "…convinced your team".
 
 - **Filter built in the wrong system** (ERP). A client covering elections
   asked for a filter by election round. I assumed it was for the website and
@@ -484,3 +879,15 @@ If the story runs over 2:10, cut the "checked with the client" sentence first
 - **Dev and production on different PHP versions** (ERP). Something worked in
   development and broke in production because I didn't check the versions
   matched. Smaller; fits "environment parity" follow-ups.
+- **Word integration for the year end** (law firm ERP, a different December
+  from #4). The client needed Word documents generated from the system before
+  the new year; I prioritized what made it work and negotiated the
+  improvements for later. Backup for #4.
+- **Hardcoded options → managed by the client** (radio client). Options like
+  story areas were hardcoded, so every new one was a request to us. Nobody
+  asked me; I moved them to the database with a screen for the client to
+  manage them. Fits: "reduced repetitive work", "thought about the customer";
+  backup for #6.
+
+**Gap to fill (not a story yet):** "Tell me about a time you had to learn
+something new quickly." This one will come up because of the PHP → Go move.
