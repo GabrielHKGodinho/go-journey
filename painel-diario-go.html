@@ -136,6 +136,8 @@
   .cp .st .btn.on-pass{border-color:var(--ok);color:var(--ok);}
   .cp .st .btn.on-fail{border-color:var(--bad);color:var(--bad);}
 
+  ul.deferred{margin:0;padding-left:18px;line-height:1.6;}
+  ul.deferred li{margin:4px 0;}
   /* Extras + search */
   .add{display:flex;gap:8px;margin-bottom:10px;}
   .search input{width:100%;}
@@ -168,6 +170,9 @@
   .cell.sel{box-shadow:0 0 0 2px var(--accent);}
   .cell.has-note::after{content:"";position:absolute;right:3px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--note);}
   .cell.out{cursor:default;}
+  .cell.in.pause{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--line);border:0;outline:1px dashed var(--line);outline-offset:-1px;}
+  .cell.in.pause.sel{box-shadow:0 0 0 2px var(--accent);}
+  .cell.in.pause.today{box-shadow:0 0 0 2px var(--text);}
   .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:14px;font-size:12.5px;color:var(--muted);}
   .legend span{display:inline-flex;align-items:center;gap:6px;}
   .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;}
@@ -192,7 +197,7 @@
   <header class="head">
     <div>
       <h1>Painel Go</h1>
-      <div class="sub">De 28/07/2026 até a oferta em 31/03/2027</div>
+      <div class="sub">De 28/07/2026 até a oferta em 31/03/2027 · revisão de 06/11: retomada em 09/11</div>
     </div>
     <div class="tools">
       <button class="btn small" id="exportJsonBtn" title="Baixar go-roadmap-dados.json com tudo o que está salvo">Exportar dados</button>
@@ -259,6 +264,19 @@
     </section>
   </div>
 
+  <section class="panel" style="margin-top:18px" aria-labelledby="deferTitle">
+    <h2 id="deferTitle">Adiados (sem data)</h2>
+    <p class="hint" style="margin:-6px 0 12px">Ficaram fora do calendário em 26/10 e 06/11. Entram quando sobrar tempo num fim de semana ou na super revisão de janeiro.</p>
+    <ul class="deferred">
+      <li><b>Take-home simulado</b> com time-box de 1h (saiu de 29/10).</li>
+      <li><b>Mock interview humano</b> (saiu do plano em 26/10; volta se surgir um par no Gophers Slack ou r/golang).</li>
+      <li><b>Auditoria das respostas de entrevista</b> acumuladas desde a Fase 2.</li>
+      <li><b>Apostila de perguntas e respostas</b>: começa quando a 1ª entrevista for marcada.</li>
+      <li><b>Explicar o investment-engine sozinho</b>, sem roteiro, em até 5 minutos.</li>
+      <li><b>LeetCode extras</b>: 21, 206 recursivo, 394, 232, 22, 46, 16 3Sum Closest, 11 Container With Most Water.</li>
+    </ul>
+  </section>
+
   <section class="panel" style="margin-top:18px" aria-labelledby="calTitle">
     <h2 id="calTitle">Calendário</h2>
     <div class="months" id="months"></div>
@@ -279,7 +297,7 @@ const PHASES = {
   7:{name:"Revisão e fechamento", full:"Super revisão, aprofundamento e fechamento", color:"var(--p7)"}
 };
 
-const FUNNEL_START = "2026-11-02";
+const FUNNEL_START = "2026-11-09";
 const GOAL_DATE = "2027-03-31";
 
 const CHECKPOINTS = [
@@ -382,63 +400,64 @@ const ROWS = [
 ["2026-10-24",4,"Simulação IA completa (fim de semana, até 3h30)","Peça ao Claude para simular entrevistador técnico + comportamental, 45min em inglês.","-","Quais 3 respostas foram mais fracas, segundo o feedback?"],
 ["2026-10-25",4,"Mock interview humano (fim de semana, até 3h30)","Troca de mock interview com alguém do Discord do Boot.dev, do Gophers Slack ou do r/golang.","gophers.slack.com · reddit.com/r/golang","O feedback humano bateu com o que a IA apontou?"],
 ["2026-10-26",4,"LeetCode revisão","1 problema Medium (revisão espaçada de temas anteriores).","leetcode.com","Qual tema você ainda erra mais?"],
-["2026-10-27",4,"LeetCode tema fraco","1 problema Medium no tema fraco identificado ontem.","leetcode.com","Melhorou em relação a ontem?"],
-["2026-10-28",4,"gRPC/system design polish","Revise gRPC e desenhe mais um exercício de system design (ex: chat em tempo real).","-","O que mudaria no seu projeto se precisasse de chat em tempo real?"],
-["2026-10-29",4,"Take-home simulado","Implemente uma feature pequena com time-box de 1h, simulando avaliação assíncrona real.","-","Entregaria isso com a qualidade de uma vaga real?"],
-["2026-10-30",4,"Revisão geral da fase","Releia as 6 histórias STAR e ajuste o que ficou fraco.","-","Está confiante para contar qualquer uma sem ler?"],
-["2026-10-31",4,"Lista de empresas-alvo (fim de semana, até 3h30)","Monte lista de 30-40 empresas/vagas: startups YC com Go, remote-first, fintechs.","workatastartup.com · wellfound.com · golang.cafe","Quais 10 parecem as melhores apostas, e por quê?"],
-["2026-11-01",4,"Preparação final (fim de semana, até 3h30)","Revise currículo/LinkedIn com os aprendizados dos últimos 3 meses. Prepare pitch de 30s. Antecipado da Sex 06/11 (viagem): monte a planilha de tracking (Empresa, Data, Canal, Status, Próximo passo, Nota) e os critérios do que torna uma vaga uma boa aposta.","-","Seu currículo mostra 2 projetos sérios em 10s de leitura?"],
-// ---- Fase 5: novembro (1h30 = ~45 min candidaturas + ~45 min estudo) ----
-["2026-11-02",5,"Viagem: sem atividade","Dia livre de viagem. Marque como concluído para não contar como atraso.","-","-"],
-["2026-11-03",5,"Viagem (máx. 30 min): verificar plataformas","Sem estudo nesta semana (viagem).","arc.dev · revelo.com · onstrider.com · beon.tech · turing.com","Quais estão vivas e com vaga de Go?","Confirmar quais plataformas seguem ativas e com vagas de Go (Arc.dev, Revelo, Strider, BEON.tech, Turing). Só verificar e anotar na planilha."],
-["2026-11-04",5,"Viagem (máx. 30 min): Revelo + Strider","Sem estudo nesta semana (viagem).","revelo.com · onstrider.com","Alguma pediu teste técnico? Com qual prazo?","Cadastro básico em Revelo e Strider (se estiverem ativas)."],
-["2026-11-05",5,"Viagem (máx. 30 min): BEON.tech + Turing","Sem estudo nesta semana (viagem).","beon.tech · turing.com","Algum prazo cai antes de 08/11? Se sim, peça para remarcar.","Cadastro básico em BEON.tech e Turing (se estiverem ativas). Anotar prazos de testes técnicos e marcá-los para depois de 08/11."],
-["2026-11-06",5,"Viagem (máx. 30 min): canais de nicho de Go","Sem estudo nesta semana (viagem).","golang.cafe · linkedin.com · gophers.slack.com · reddit.com/r/golang","Quantas vagas de Go você anotou?","Alerta no Golang Cafe, alertas Golang remoto no LinkedIn, entrar no Gophers Slack #jobs, ler a thread do mês do r/golang Who's Hiring e anotar as vagas na planilha."],
-["2026-11-07",5,"Viagem: sem atividade","Dia livre de viagem. Marque como concluído para não contar como atraso.","-","-"],
-["2026-11-08",5,"Arc.dev + primeira leva de candidaturas (fim de semana, até 3h30)","Sem estudo hoje: o dia é das candidaturas.","arc.dev","Quais 3 vagas te deixaram mais animado, e por quê?","Perfil completo no Arc.dev (~1h, com link do projeto âncora). Primeira leva: 10 candidaturas bem escolhidas, cada mensagem citando o projeto âncora (~1h40). Checkpoint semanal."],
-["2026-11-09",5,"Sliding window: fundamentos","Sliding window: fundamentos + LeetCode 121 Best Time to Buy and Sell Stock (Easy).","leetcode.com/problems/best-time-to-buy-and-sell-stock","Por que uma janela evita os dois loops aninhados?","2-3 candidaturas."],
-["2026-11-10",5,"Sliding window: substring sem repetição","LeetCode 3 Longest Substring Without Repeating Characters (Medium).","leetcode.com","Quando a janela cresce e quando ela encolhe?","2-3 candidaturas."],
-["2026-11-11",5,"Sliding window: substituição de caracteres","LeetCode 424 Longest Repeating Character Replacement (Medium).","leetcode.com","Qual invariante a janela mantém?","2-3 candidaturas."],
-["2026-11-12",5,"Busca binária: fundamentos","Busca binária: fundamentos + LeetCode 704 Binary Search (Easy).","leetcode.com","Por que mid := lo + (hi-lo)/2 e não (lo+hi)/2?","1 outreach + responder o que chegou."],
-["2026-11-13",5,"Revisão + gravação","Revisão da semana + gravação (refazer 1 problema da semana simulando entrevista).","-","Qual padrão da semana você reconheceria só pelo enunciado?","Organizar respostas e preparar entrevistas agendadas."],
-["2026-11-14",5,"Canais de nicho + system design (fim de semana, até 3h30)","System design cronometrado (45 min): rate limiter. Gravado.","excalidraw.com","O que você esqueceu de considerar até revisar?","Varredura dos canais de nicho de Go; candidaturas nas vagas relevantes."],
-["2026-11-15",5,"Outreach + follow-up + checkpoint semanal (fim de semana, até 3h30)","LeetCode 74 Search a 2D Matrix (Medium) + atualizar o PATTERNS.md com sliding window e busca binária.","leetcode.com · linkedin.com","Números da semana: candidaturas, respostas, processos.","5 mensagens para engenheiros de Go em empresas-alvo pedindo 15 min de conversa (nunca pedindo vaga direto). Follow-up educado nas candidaturas de 08/11 sem resposta. Checkpoint semanal."],
-["2026-11-16",5,"Busca binária: mínimo no array rotacionado","LeetCode 153 Find Minimum in Rotated Sorted Array (Medium).","leetcode.com","Qual metade você descarta, e por quê?","2-3 candidaturas."],
-["2026-11-17",5,"Busca binária: busca no array rotacionado","LeetCode 33 Search in Rotated Sorted Array (Medium).","leetcode.com","O que mudou em relação ao 153?","2-3 candidaturas."],
-["2026-11-18",5,"Heap: fundamentos","Heap: fundamentos + container/heap em Go + LeetCode 703 Kth Largest Element in a Stream (Easy).","pkg.go.dev/container/heap · leetcode.com","Quais 5 métodos um tipo precisa ter para usar container/heap?","2-3 candidaturas."],
-["2026-11-19",5,"Heap: k-ésimo maior","LeetCode 215 Kth Largest Element in an Array (Medium).","leetcode.com","Heap de tamanho k ou ordenar tudo: qual o Big-O de cada um?","1 outreach + responder o que chegou."],
-["2026-11-20",5,"Revisão + gravação","Revisão da semana + gravação.","-","Você sabe o stack e o produto de cada empresa que respondeu?","Preparação para entrevistas agendadas."],
-["2026-11-21",5,"Mock completo (fim de semana, até 3h30)","Mock completo (técnica + comportamental) com IA ou par humano. Gravado.","-","O que mudou desde a simulação da semana 12?","Candidaturas da semana que faltaram."],
-["2026-11-22",5,"Diagnóstico de rejeições (fim de semana, até 3h30)","Atualizar o PATTERNS.md com heap.","-","Existe um padrão nas rejeições (mesma etapa, mesmo tipo de pergunta)?","Para cada \"não\": o que aconteceu e o que você faria diferente. Checkpoint semanal."],
-["2026-11-23",5,"Grafos: fundamentos","Grafos: lista de adjacência com map + LeetCode 200 Number of Islands (Medium).","leetcode.com","Onde o BFS/DFS de árvore muda quando existe ciclo?","2-3 candidaturas. Semana de Thanksgiving nos EUA: respostas mais lentas."],
-["2026-11-24",5,"Grafos: área de ilha","LeetCode 695 Max Area of Island (Medium).","leetcode.com","Como marcar uma célula como visitada sem um map extra?","2-3 candidaturas."],
-["2026-11-25",5,"Grafos: clonar","LeetCode 133 Clone Graph (Medium).","leetcode.com","Por que o map de nós já copiados evita loop infinito?","2-3 candidaturas."],
-["2026-11-26",5,"Grafos: BFS com várias origens","LeetCode 994 Rotting Oranges (Medium).","leetcode.com","Por que BFS dá o tempo mínimo aqui e DFS não?","Follow-ups (Thanksgiving nos EUA)."],
-["2026-11-27",5,"Revisão + gravação","Revisão da semana + gravação.","-","Qual problema da semana você ainda não refaria sozinho?","Preparação para entrevistas agendadas."],
-["2026-11-28",5,"Revisão do mês (fim de semana, até 3h30)","System design cronometrado: sistema de notificações. Gravado.","excalidraw.com","O que, honestamente, precisa mudar no funil?","Taxa de resposta por canal; ajustar currículo, mensagens e título do LinkedIn se estiver baixa."],
-["2026-11-29",5,"Checkpoint semanal + plano de dezembro (fim de semana, até 3h30)","Atualizar o PATTERNS.md com grafos.","-","Quantos processos estão em andamento hoje?","Checkpoint semanal + escolher os canais de dezembro."],
+["2026-10-27", 4, "Simulação completa com IA", "Simulação de 45 min em inglês (técnica + comportamental) com IA, no papel de uma vaga real de Go backend. Feedback no final: as 3 respostas mais fracas.", "-", "Quais 3 respostas foram mais fracas, segundo o feedback?"],
+["2026-10-28", 4, "LeetCode: 3Sum + Level Order", "Dois Medium: 15 3Sum (revisão espaçada de two pointers) e 102 Binary Tree Level Order Traversal (BFS por nível).", "leetcode.com", "Você erra quando o tema é conhecido mas a variação é nova. Por quê?"],
+["2026-10-29", 4, "gRPC + system design: chat em tempo real", "Revise gRPC (4 tipos de RPC, deadlines) e desenhe, cronometrado, o system design de um chat em tempo real.", "grpc.io · excalidraw.com", "O que mudaria no seu projeto âncora se ele precisasse de chat em tempo real?"],
+["2026-10-30", 4, "Lista de empresas-alvo", "Lista de empresas pelo método LAMP (escopo reduzido): planilha Go Job Search Targets + cadastro no Work at a Startup.", "workatastartup.com · golang.cafe", "Quais 10 parecem as melhores apostas, e por quê?"],
+["2026-10-31", 4, "Pausa: sem atividade", "Retomada em Seg 09/11 (revisão de 06/11). Dia sem tarefa: não conta como atraso.", "-", "-"],
+["2026-11-01", 4, "Pausa: sem atividade", "Retomada em Seg 09/11 (revisão de 06/11). Dia sem tarefa: não conta como atraso.", "-", "-"],
+["2026-11-02", 5, "Pausa: sem atividade", "Retomada em Seg 09/11 (revisão de 06/11). Dia sem tarefa: não conta como atraso.", "-", "-"],
+["2026-11-03", 5, "Pausa: sem atividade", "Retomada em Seg 09/11 (revisão de 06/11). Dia sem tarefa: não conta como atraso.", "-", "-"],
+["2026-11-04", 5, "Pausa: sem atividade", "Retomada em Seg 09/11 (revisão de 06/11). Dia sem tarefa: não conta como atraso.", "-", "-"],
+["2026-11-05", 5, "Pausa: sem atividade", "Retomada em Seg 09/11 (revisão de 06/11). Dia sem tarefa: não conta como atraso.", "-", "-"],
+["2026-11-06", 5, "Pausa: sem atividade", "Retomada em Seg 09/11 (revisão de 06/11). Dia sem tarefa: não conta como atraso.", "-", "-"],
+["2026-11-07", 5, "Pausa: sem atividade", "Retomada em Seg 09/11 (revisão de 06/11). Dia sem tarefa: não conta como atraso.", "-", "-"],
+["2026-11-08", 5, "Pausa: sem atividade", "Retomada em Seg 09/11 (revisão de 06/11). Dia sem tarefa: não conta como atraso.", "-", "-"],
+// ---- Fase 5, Semana 14: arranque do pipeline (1h30 inteira para preparação + 1 candidatura por dia; sem LeetCode) ----
+["2026-11-09", 5, "Arranque: currículo + planilha + 1ª candidatura", "Currículo (~35 min): reescrever a linha do estágio como engenharia (\"Project Management & Agile\" faz o recrutador contar 3 anos, não 5); a linha do CPC só entra se a edição for confirmada. Planilha (~15 min): na Go Job Search Targets, colunas Data, Canal, Status, Próximo passo, Nota + Why them. 1ª candidatura (~40 min): a empresa mais bem ordenada da lista que tenha vaga de Go aberta e contrate do Brasil.", "Resume_Godinho.pdf · Go Job Search Targets", "O currículo novo deixa claro \"5 anos de backend em produção\" em 10 segundos?"],
+["2026-11-10", 5, "Arranque: LinkedIn + plataformas + 1 candidatura", "LinkedIn (~30 min): espelhar as mudanças do currículo; open to work visível só para recrutadores; alertas Golang remoto. Plataformas (~15 min): confirmar quais seguem ativas e com vaga de Go e anotar na planilha. 1 candidatura (~40 min).", "linkedin.com · arc.dev · revelo.com · onstrider.com · beon.tech · turing.com", "Quais plataformas estão vivas e com vaga de Go?"],
+["2026-11-11", 5, "Arranque: Revelo + Strider + 1 candidatura", "Cadastro em Revelo e Strider, se estiverem ativas (~45 min). 1 candidatura (~40 min).", "revelo.com · onstrider.com", "Alguma pediu teste técnico? Com qual prazo?"],
+["2026-11-12", 5, "Arranque: BEON.tech + Turing + 1 candidatura", "Cadastro em BEON.tech e Turing, se estiverem ativas (~45 min). 1 candidatura (~40 min).", "beon.tech · turing.com", "Onde os testes técnicos pedidos cabem na agenda, dentro do prazo?"],
+["2026-11-13", 5, "Arranque: canais de nicho + 1 candidatura", "Canais de nicho (~45 min): alerta no Golang Cafe, entrar no Gophers Slack #jobs, ler a thread de novembro do r/golang Who's Hiring e anotar as vagas na planilha. 1 candidatura (~40 min).", "golang.cafe · gophers.slack.com · reddit.com/r/golang", "Quantas vagas de Go você anotou, e quantas contratam do Brasil?"],
+["2026-11-14", 5, "Arc.dev + Why them + fechar 10 candidaturas (fim de semana, até 3h30)", "Perfil completo no Arc.dev (~1h, com link do projeto âncora). Why them das top 5 empresas da lista (~30 min). Candidaturas até completar 10 na semana (~1h45).", "arc.dev", "Quais 3 vagas te deixaram mais animado, e por quê?"],
+["2026-11-15", 5, "Upgrade do investment-engine 1 + checkpoint (fim de semana, até 3h30)", "Upgrade do investment-engine, sessão 1 (~1h30). Checkpoint semanal (10 min). Candidaturas que faltaram para fechar 10, ou folga.", "github.com/GabrielHKGodinho/investment-engine", "Números da semana: candidaturas, respostas, cadastros feitos."],
+// ---- Fase 5, Semanas 15-17 (1h30 = ~45 min candidaturas + ~45 min estudo) ----
+["2026-11-16", 5, "Sliding window: fundamentos", "Sliding window: fundamentos + LeetCode 121 Best Time to Buy and Sell Stock (Easy).", "leetcode.com/problems/best-time-to-buy-and-sell-stock", "Por que uma janela evita os dois loops aninhados?", "2-3 candidaturas."],
+["2026-11-17", 5, "Sliding window: substring sem repetição", "LeetCode 3 Longest Substring Without Repeating Characters (Medium).", "leetcode.com", "Quando a janela cresce e quando ela encolhe?", "2-3 candidaturas."],
+["2026-11-18", 5, "Sliding window: substituição de caracteres", "LeetCode 424 Longest Repeating Character Replacement (Medium).", "leetcode.com", "Qual invariante a janela mantém?", "2-3 candidaturas."],
+["2026-11-19", 5, "Busca binária: fundamentos", "Busca binária: fundamentos + LeetCode 704 Binary Search (Easy).", "leetcode.com", "Por que mid := lo + (hi-lo)/2 e não (lo+hi)/2?", "1 outreach + responder o que chegou."],
+["2026-11-20", 5, "Revisão da semana", "Revisão da semana: refazer 1 problema da semana, cronometrado.", "-", "Qual padrão da semana você reconheceria só pelo enunciado?", "Organizar respostas e preparar entrevistas agendadas."],
+["2026-11-21", 5, "Canais de nicho + system design (fim de semana, até 3h30)", "System design cronometrado (45 min): rate limiter.", "excalidraw.com", "O que você esqueceu de considerar até revisar?", "Varredura dos canais de nicho de Go; candidaturas nas vagas relevantes."],
+["2026-11-22", 5, "Outreach + follow-up + checkpoint semanal (fim de semana, até 3h30)", "LeetCode 74 Search a 2D Matrix (Medium) + atualizar o PATTERNS.md com sliding window e busca binária. Sem upgrade do investment-engine hoje.", "leetcode.com · linkedin.com", "Números da semana: candidaturas, respostas, processos.", "5 mensagens para engenheiros de Go em empresas-alvo pedindo 15 min de conversa (nunca pedindo vaga direto). Follow-up educado nas candidaturas de 09-14/11 sem resposta. Checkpoint semanal."],
+["2026-11-23", 5, "Busca binária: mínimo no array rotacionado", "LeetCode 153 Find Minimum in Rotated Sorted Array (Medium).", "leetcode.com", "Qual metade você descarta, e por quê?", "2-3 candidaturas. Semana de Thanksgiving nos EUA: respostas mais lentas."],
+["2026-11-24", 5, "Busca binária: busca no array rotacionado", "LeetCode 33 Search in Rotated Sorted Array (Medium).", "leetcode.com", "O que mudou em relação ao 153?", "2-3 candidaturas."],
+["2026-11-25", 5, "Heap: fundamentos", "Heap: fundamentos + container/heap em Go + LeetCode 703 Kth Largest Element in a Stream (Easy).", "pkg.go.dev/container/heap · leetcode.com", "Quais 5 métodos um tipo precisa ter para usar container/heap?", "2-3 candidaturas."],
+["2026-11-26", 5, "Heap: k-ésimo maior", "LeetCode 215 Kth Largest Element in an Array (Medium).", "leetcode.com", "Heap de tamanho k ou ordenar tudo: qual o Big-O de cada um?", "1 outreach + responder o que chegou (Thanksgiving nos EUA)."],
+["2026-11-27", 5, "Revisão da semana", "Revisão da semana.", "-", "Você sabe o stack e o produto de cada empresa que respondeu?", "Preparação para entrevistas agendadas."],
+["2026-11-28", 5, "Mock completo (fim de semana, até 3h30)", "Mock completo (técnica + comportamental) com IA.", "-", "O que mudou desde a simulação de 27/10?", "Candidaturas da semana que faltaram."],
+["2026-11-29", 5, "Diagnóstico de rejeições + upgrade 2 (fim de semana, até 3h30)", "Atualizar o PATTERNS.md com heap + upgrade do investment-engine, sessão 2 (~1h30).", "github.com/GabrielHKGodinho/investment-engine", "Existe um padrão nas rejeições (mesma etapa, mesmo tipo de pergunta)?", "Para cada \"não\": o que aconteceu e o que você faria diferente. Checkpoint semanal."],
+["2026-11-30", 5, "Grafos: fundamentos", "Grafos: lista de adjacência com map + LeetCode 200 Number of Islands (Medium).", "leetcode.com", "Onde o BFS/DFS de árvore muda quando existe ciclo?", "2-3 candidaturas."],
+["2026-12-01", 5, "Grafos: área de ilha", "LeetCode 695 Max Area of Island (Medium).", "leetcode.com", "Como marcar uma célula como visitada sem um map extra?", "2-3 candidaturas."],
+["2026-12-02", 5, "Grafos: clonar", "LeetCode 133 Clone Graph (Medium).", "leetcode.com", "Por que o map de nós já copiados evita loop infinito?", "2-3 candidaturas."],
+["2026-12-03", 5, "Grafos: BFS com várias origens", "LeetCode 994 Rotting Oranges (Medium).", "leetcode.com", "Por que BFS dá o tempo mínimo aqui e DFS não?", "Follow-ups."],
+["2026-12-04", 5, "Revisão da semana", "Revisão da semana.", "-", "Qual problema da semana você ainda não refaria sozinho?", "Preparação para entrevistas agendadas."],
+["2026-12-05", 5, "Revisão do mês + system design (fim de semana, até 3h30)", "System design cronometrado: sistema de notificações.", "excalidraw.com", "O que, honestamente, precisa mudar no funil?", "Revisão do mês: taxa de resposta por canal (incluindo o Golang Cafe); ajustar currículo, mensagens e título do LinkedIn se estiver baixa."],
+["2026-12-06", 5, "Checkpoint semanal + upgrade 3 (fim de semana, até 3h30)", "Atualizar o PATTERNS.md com grafos + upgrade do investment-engine, sessão 3 (~1h30).", "github.com/GabrielHKGodinho/investment-engine", "Quantos processos estão em andamento hoje?", "Checkpoint semanal + planejar os canais de dezembro."],
 // ---- Fase 6: dezembro ----
-["2026-11-30",6,"Grafos: ciclo e ordem topológica","LeetCode 207 Course Schedule (Medium).","leetcode.com","Como o grafo de pré-requisitos vira um problema de ciclo?","2-3 candidaturas ou preparação para entrevistas."],
-["2026-12-01",6,"Intervalos: merge","LeetCode 56 Merge Intervals (Medium).","leetcode.com","Por que ordenar primeiro?","2-3 candidaturas ou preparação para entrevistas."],
-["2026-12-02",6,"Intervalos: inserir","LeetCode 57 Insert Interval (Medium).","leetcode.com","Quais são as 3 fases do loop?","2-3 candidaturas ou preparação para entrevistas."],
-["2026-12-03",6,"Intervalos: remover sobreposições","LeetCode 435 Non-overlapping Intervals (Medium).","leetcode.com","Por que ordenar pelo fim e não pelo início?","2-3 candidaturas ou preparação para entrevistas."],
-["2026-12-04",6,"Revisão + gravação","Revisão da semana + gravação.","-","Qual padrão de novembro ainda é o mais fraco?","Follow-ups."],
-["2026-12-05",6,"System design: chat (fim de semana, até 3h30)","System design cronometrado: chat em tempo real. Gravado.","excalidraw.com","Onde ficam as conexões abertas, e como elas escalam?","Varredura dos canais de nicho de Go."],
-["2026-12-06",6,"Checkpoint semanal (fim de semana, até 3h30)","Atualizar o PATTERNS.md com ordenação topológica e intervalos.","-","Números da semana: candidaturas, respostas, processos.","Checkpoint semanal."],
-["2026-12-07",6,"DP 1D: escada","LeetCode 70 Climbing Stairs (Easy): fundamentos de programação dinâmica.","leetcode.com","Qual é o subproblema e qual é a recorrência?","2-3 candidaturas ou preparação para entrevistas."],
-["2026-12-08",6,"DP 1D: house robber","LeetCode 198 House Robber (Medium).","leetcode.com","Por que só os 2 últimos valores importam?","2-3 candidaturas ou preparação para entrevistas."],
-["2026-12-09",6,"DP 1D: custo mínimo","LeetCode 746 Min Cost Climbing Stairs (Easy).","leetcode.com","Como passar de O(n) para O(1) de espaço?","2-3 candidaturas ou preparação para entrevistas."],
-["2026-12-10",6,"DP: troco","LeetCode 322 Coin Change (Medium).","leetcode.com","Por que a estratégia gulosa falha aqui?","2-3 candidaturas ou preparação para entrevistas."],
-["2026-12-11",6,"Revisão + gravação","Revisão da semana + gravação.","-","Qual problema de DP você refaria sozinho?","Follow-ups."],
-["2026-12-12",6,"Comportamental (fim de semana, até 3h30)","Reensaiar as 6 histórias STAR + regravar o \"Tell me about yourself\". Gravado.","-","Qual história ainda soa decorada?","Candidaturas da semana que faltaram."],
-["2026-12-13",6,"Revisão espaçada (fim de semana, até 3h30)","Refazer 2 problemas de novembro sem consultar + atualizar o PATTERNS.md com DP.","-","Você lembrou o padrão ou a solução?","Checkpoint semanal."],
-["2026-12-14",6,"DP: house robber II","LeetCode 213 House Robber II (Medium).","leetcode.com","Como o círculo vira dois problemas lineares?","2-3 candidaturas."],
-["2026-12-15",6,"Checkpoint 1","Se o checkpoint não passou: começar hoje a revisão de currículo, mensagens e canais.","-","Você tem pelo menos 1 triagem marcada?","Contar as triagens marcadas desde 02/11 e registrar o resultado no card de checkpoints."],
-["2026-12-16",6,"Última leva antes das festas + DP: decode ways","Se o checkpoint passou: LeetCode 91 Decode Ways (Medium). Se não passou: ajustes do checkpoint, e o DP II vai para 18-24/01.","leetcode.com","O que você mudou no material de candidatura esta semana?","Candidaturas (última leva antes das festas)."],
-["2026-12-17",6,"Última leva antes das festas + DP: word break","Se o checkpoint passou: LeetCode 139 Word Break (Medium). Se não passou: ajustes do checkpoint.","leetcode.com","Quais canais trouxeram resposta até agora?","Candidaturas (última leva antes das festas)."],
-["2026-12-18",6,"Última leva antes das festas + DP: maior subsequência crescente","Se o checkpoint passou: LeetCode 300 Longest Increasing Subsequence (Medium). Se não passou: ajustes do checkpoint.","leetcode.com","Quais processos ficam em aberto durante as festas?","Candidaturas (última leva antes das festas)."],
-["2026-12-19",6,"Mock ou reescrita (fim de semana, até 3h30)","Mock completo (se o checkpoint passou) ou reescrita do material de candidatura (se não passou).","-","O que mudou desde o mock de novembro?","Responder processos em andamento."],
-["2026-12-20",6,"Mock ou reescrita (fim de semana, até 3h30)","Continuação do sábado.","-","O que fica pronto antes da pausa das festas?","Responder processos em andamento."]
+["2026-12-07", 6, "Grafos: ciclo e ordem topológica", "LeetCode 207 Course Schedule (Medium).", "leetcode.com", "Como o grafo de pré-requisitos vira um problema de ciclo?", "2-3 candidaturas ou preparação para entrevistas marcadas."],
+["2026-12-08", 6, "Intervalos: merge", "LeetCode 56 Merge Intervals (Medium).", "leetcode.com", "Por que ordenar primeiro?", "2-3 candidaturas ou preparação para entrevistas marcadas."],
+["2026-12-09", 6, "Intervalos: inserir", "LeetCode 57 Insert Interval (Medium).", "leetcode.com", "Quais são as 3 fases do loop?", "2-3 candidaturas ou preparação para entrevistas marcadas."],
+["2026-12-10", 6, "Intervalos: remover sobreposições", "LeetCode 435 Non-overlapping Intervals (Medium).", "leetcode.com", "Por que ordenar pelo fim e não pelo início?", "2-3 candidaturas ou preparação para entrevistas marcadas."],
+["2026-12-11", 6, "Revisão da semana", "Revisão da semana.", "-", "Qual padrão de novembro ainda é o mais fraco?", "Follow-ups."],
+["2026-12-12", 6, "System design: placar ao vivo (fim de semana, até 3h30)", "System design cronometrado: placar ao vivo (chat em tempo real já foi feito em 29/10).", "excalidraw.com", "Onde ficam as conexões abertas, e como elas escalam?", "Varredura dos canais de nicho de Go."],
+["2026-12-13", 6, "Checkpoint semanal + upgrade 4 (fim de semana, até 3h30)", "Atualizar o PATTERNS.md com ordenação topológica e intervalos + upgrade do investment-engine, sessão 4 (~1h30).", "github.com/GabrielHKGodinho/investment-engine", "Números da semana: candidaturas, respostas, processos.", "Checkpoint semanal."],
+["2026-12-14", 6, "DP 1D: escada", "LeetCode 70 Climbing Stairs (Easy): fundamentos de programação dinâmica.", "leetcode.com", "Qual é o subproblema e qual é a recorrência?", "Candidaturas."],
+["2026-12-15", 6, "Checkpoint 1", "Se o checkpoint não passou: de quarta a sexta, o bloco de estudo vira revisão de currículo, mensagens e canais.", "-", "Você tem pelo menos 1 triagem marcada?", "Contar as triagens marcadas desde 09/11 e registrar o resultado no card de checkpoints."],
+["2026-12-16", 6, "Última leva antes das festas + DP: house robber", "Se o checkpoint passou: LeetCode 198 House Robber (Medium). Se não passou: ajustes do checkpoint, e os três DP 1D vão para 18-24/01.", "leetcode.com", "Por que só os 2 últimos valores importam?", "Candidaturas (última leva antes das festas)."],
+["2026-12-17", 6, "Última leva antes das festas + DP: custo mínimo", "Se o checkpoint passou: LeetCode 746 Min Cost Climbing Stairs (Easy). Se não passou: ajustes do checkpoint.", "leetcode.com", "Como passar de O(n) para O(1) de espaço?", "Candidaturas (última leva antes das festas)."],
+["2026-12-18", 6, "Última leva antes das festas + DP: troco", "Se o checkpoint passou: LeetCode 322 Coin Change (Medium). Se não passou: ajustes do checkpoint.", "leetcode.com", "Por que a estratégia gulosa falha aqui?", "Candidaturas (última leva antes das festas)."],
+["2026-12-19", 6, "Comportamental ou reescrita (fim de semana, até 3h30)", "Se o checkpoint passou: reensaiar as 6 histórias STAR + regravar o \"Tell me about yourself\" (texto revisado: com gravação). Se não passou: reescrita do material de candidatura, e o reensaio vai para Sáb 09/01.", "-", "Qual história ainda soa decorada?", "Responder processos em andamento."],
+["2026-12-20", 6, "Checkpoint semanal + upgrade 5 (fim de semana, até 3h30)", "Revisão espaçada: refazer 2 problemas de novembro sem consultar + atualizar o PATTERNS.md com DP + upgrade do investment-engine, sessão 5 (~1h30).", "github.com/GabrielHKGodinho/investment-engine", "Você lembrou o padrão ou a solução?", "Checkpoint semanal."]
 ];
 
 // ---- Festas + Fase 7 (janeiro a março): gerados por semana ----
@@ -446,7 +465,7 @@ const WEEKS = [
   // [início (segunda), fim (domingo), fase, tema, estudo, recurso, pergunta]
   ["2027-01-04","2027-01-10",7,"Super revisão: fundamentos e concorrência","Refazer sem consultar: worker pool, context, race conditions e padrões de erro (Fases 1-2).","go-journey","Qual desses você ainda não escreveria de cabeça?"],
   ["2027-01-11","2027-01-17",7,"Super revisão: sistemas distribuídos","Conceitos da Fase 3: mensageria, at-least-once, idempotência, retry/DLQ, observabilidade.","go-journey · investment-engine","Você explica cada conceito com um exemplo real do projeto?"],
-  ["2027-01-18","2027-01-24",7,"Super revisão: algoritmos","Refazer 1 problema de cada padrão do PATTERNS.md, cronometrado (+ DP II: 91, 139, 300, se ficou pendente da Semana 20).","leetcode.com","Qual padrão ficou mais lento do que na primeira vez?"],
+  ["2027-01-18","2027-01-24",7,"Super revisão: algoritmos","Refazer 1 problema de cada padrão do PATTERNS.md, cronometrado + DP II (213 House Robber II, 91 Decode Ways, 139 Word Break, 300 LIS) + os DP 1D 198, 746 e 322, se o Checkpoint 1 não passou. O que não couber vai para o sábado.","leetcode.com","Qual padrão ficou mais lento do que na primeira vez?"],
   ["2027-01-25","2027-01-31",7,"Super revisão: system design","2 exercícios cronometrados de 45 min.","excalidraw.com","O que você sempre esquece de considerar?"],
   ["2027-02-01","2027-02-07",7,"Aprofundamento: Go avançado","Generics, pprof e benchmarks, testes avançados. Na semana da mudança para Curitiba: só follow-ups e processos.","go.dev/doc · pkg.go.dev/runtime/pprof","Onde generics deixam o código mais claro, e onde não?"],
   ["2027-02-08","2027-02-14",7,"Aprofundamento: backtracking e tries","Backtracking e tries, 1 problema por dia. Na semana da mudança: só follow-ups e processos.","leetcode.com","Como você poda a árvore de busca?"],
@@ -471,13 +490,14 @@ function dow(iso){ const [y,m,d]=iso.split('-').map(Number); return new Date(y,m
       const w = dow(iso);
       let row;
       if(w>=1 && w<=4) row=[iso,phase,theme,study,res,q,"~45 min: 2-3 candidaturas, follow-ups ou preparação para entrevista."];
-      else if(w===5) row=[iso,phase,theme+": revisão","Revisão da semana + gravação.","-","O que da semana você ainda não explicaria sem consultar?","Follow-ups."];
-      else if(w===6) row=[iso,phase,theme+" (fim de semana, até 3h30)","Aprofundamento do tema + gravação ou mock.",res,q,"Varredura dos canais de nicho de Go."];
+      else if(w===5) row=[iso,phase,theme+": revisão","Revisão da semana.","-","O que da semana você ainda não explicaria sem consultar?","Follow-ups."];
+      else if(w===6) row=[iso,phase,theme+" (fim de semana, até 3h30)","Aprofundamento do tema da semana ou mock.",res,q,"Varredura dos canais de nicho de Go."];
       else row=[iso,phase,"Checkpoint semanal (fim de semana, até 3h30)","Revisão espaçada: refazer problemas antigos sem consultar.","-","Números da semana: candidaturas, respostas, processos.","Checkpoint semanal."];
       ROWS.push(row);
     }
   });
   const override = (iso, focus, q, cand) => { const r = ROWS.find(x=>x[0]===iso); if(r){ r[2]=focus; r[5]=q; r[6]=cand; } };
+  { const r = ROWS.find(x=>x[0]==="2027-01-09"); if(r){ r[2]="Mock completo (fim de semana, até 3h30)"; r[3]="Mock completo (técnica + comportamental) com IA (veio da antiga Semana 20) + reensaio das STAR e do Tell me about yourself, se ficou pendente em 19/12."; r[4]="-"; r[5]="O que mudou desde o mock de 28/11?"; } }
   override("2027-01-31","Checkpoint 2 (fim de semana, até 3h30)","Algum processo passou da triagem?","Registrar o resultado no card de checkpoints.");
   override("2027-02-28","Checkpoint 3 (fim de semana, até 3h30)","Algum processo está em etapa final?","Registrar o resultado no card de checkpoints.");
   override("2027-03-31","Meta: oferta até hoje","O que você aprendeu com o funil, independente do resultado?","Registrar o resultado da meta no card de checkpoints.");
@@ -532,23 +552,28 @@ function fmtDate(iso){ const [y,m,d]=iso.split('-'); return DAYS[dow(iso)]+' '+d
 function fmtShort(iso){ const [,m,d]=iso.split('-'); return d+'/'+m; }
 function daysBetween(a,b){ const [y1,m1,d1]=a.split('-').map(Number), [y2,m2,d2]=b.split('-').map(Number); return Math.round((Date.UTC(y2,m2-1,d2)-Date.UTC(y1,m1-1,d1))/86400000); }
 function isWeekendRow(e){ return /fim de semana/.test(e.focus); }
+function isPause(d){ const e = DATA_MAP[d]; return !!e && /^Pausa/.test(e.focus); }
+const WORK_DATES = () => DATES.filter(d=>!isPause(d));
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),1800); }
 
 /* ---------- stats ---------- */
 function stats(){
   const today = todayISO();
-  const upto = DATES.filter(d=>d<=today);
-  const done = DATES.filter(d=>doneMap[d]).length;
-  const late = DATES.filter(d=>d<today && !doneMap[d]).length;
-  const lastDone = DATES.filter(d=>doneMap[d] && d<=today).pop();
+  const work = WORK_DATES();
+  const upto = work.filter(d=>d<=today);
+  const done = work.filter(d=>doneMap[d]).length;
+  const late = work.filter(d=>d<today && !doneMap[d]).length;
+  const lastDone = work.filter(d=>doneMap[d] && d<=today).pop();
   let streak = 0;
-  if(lastDone){ let d = lastDone; while(doneMap[d]){ streak++; d = addDays(d,-1); } }
-  return {done, total:DATES.length, upto:upto.length, late, streak, toGoal:daysBetween(today, GOAL_DATE)};
+  // Pause days neither count nor break the streak.
+  if(lastDone){ let d = lastDone; while(doneMap[d] || isPause(d)){ if(doneMap[d]) streak++; d = addDays(d,-1); } }
+  return {done, total:work.length, upto:upto.length, late, streak, toGoal:daysBetween(today, GOAL_DATE)};
 }
 function firstPending(){
   const today = todayISO();
   const from = addDays(today,-21);
-  return DATES.find(d=>d>=from && d<=today && !doneMap[d]) || (DATA_MAP[today] ? today : DATES.find(d=>!doneMap[d]) || LAST);
+  const work = WORK_DATES();
+  return work.find(d=>d>=from && d<=today && !doneMap[d]) || (DATA_MAP[today] && !isPause(today) ? today : work.find(d=>d>=today && !doneMap[d]) || work.find(d=>!doneMap[d]) || LAST);
 }
 
 /* ---------- journey track ---------- */
@@ -570,7 +595,8 @@ function renderJourney(){
   Object.keys(PHASES).forEach(p=>{
     const days = DATES.filter(d=>DATA_MAP[d].phase==p);
     const w = days.length/span*100;
-    const pct = days.filter(d=>doneMap[d]).length/days.length*100;
+    const work = days.filter(d=>!isPause(d));
+    const pct = work.length ? work.filter(d=>doneMap[d]).length/work.length*100 : 0;
     bar += '<div class="seg" style="width:'+w+'%;--c:'+PHASES[p].color+'"><div class="rest"></div><div class="fill" style="width:'+pct+'%"></div>'+
       '<button title="'+esc(PHASES[p].full)+': '+Math.round(pct)+'% concluído — abrir o primeiro dia" data-phase="'+p+'"><span class="sr">'+esc(PHASES[p].full)+'</span></button></div>';
     names += '<div style="width:'+w+'%" class="'+(cur==p?'on':'')+'">'+esc(PHASES[p].name)+'</div>';
@@ -586,7 +612,7 @@ function renderJourney(){
   $('track').innerHTML = bar + flags + here;
   $('phaseNames').innerHTML = names;
   $('track').querySelectorAll('button[data-phase]').forEach(b=>b.addEventListener('click',()=>{
-    const p = b.dataset.phase; const d = DATES.find(x=>DATA_MAP[x].phase==p && !doneMap[x]) || DATES.find(x=>DATA_MAP[x].phase==p);
+    const p = b.dataset.phase; const d = WORK_DATES().find(x=>DATA_MAP[x].phase==p && !doneMap[x]) || DATES.find(x=>DATA_MAP[x].phase==p);
     go(d);
   }));
 }
@@ -616,28 +642,31 @@ function renderDay(){
   card.style.setProperty('--pc', ph.color);
   const weekend = isWeekendRow(e);
   const festas = /^Festas/.test(e.focus);
-  const trip = /^Viagem/.test(e.focus);
-  const fmt = festas ? 'Pausa' : /^Viagem: sem atividade/.test(e.focus) ? 'Sem atividade' : trip ? 'máx. 30 min' : weekend ? 'até 3h30' : (e.date >= '2026-10-13' ? '1h30' : '1h');
+  const pause = isPause(e.date);
+  const fmt = festas ? 'Pausa' : pause ? 'Sem atividade' : weekend ? 'até 3h30' : (e.date >= '2026-10-13' ? '1h30' : '1h');
   const title = e.focus.replace(/\s*\(fim de semana, até 3h30\)/,'');
   let body = '';
   if(e.apply){
-    body += '<div class="blocks2"><div class="block"><div class="lbl">Candidaturas'+(weekend||festas||trip?'':' · ~45 min')+'</div><p>'+esc(e.apply)+'</p></div>'+
-            '<div class="block"><div class="lbl">Estudo'+(weekend||festas||trip?'':' · ~45 min')+'</div><p>'+esc(e.action)+'</p></div></div>';
+    body += '<div class="blocks2"><div class="block"><div class="lbl">Candidaturas'+(weekend||festas?'':' · ~45 min')+'</div><p>'+esc(e.apply)+'</p></div>'+
+            '<div class="block"><div class="lbl">Estudo'+(weekend||festas?'':' · ~45 min')+'</div><p>'+esc(e.action)+'</p></div></div>';
   } else {
     body += '<div class="block"><div class="lbl">O que fazer</div><p>'+esc(e.action)+'</p></div>';
   }
   body += resourcesHTML(e.res);
   if(e.question && e.question!=='-') body += '<div class="question"><div class="lbl">Pergunta do dia</div>'+esc(e.question)+'</div>';
   const done = !!doneMap[e.date];
-  card.innerHTML =
-    '<div class="day-head"><span class="chip phase">Fase '+e.phase+': '+esc(ph.full)+'</span><span class="chip fmt">'+fmt+'</span></div>'+
-    '<h3>'+esc(title)+'</h3>'+ body +
+  const actions = pause ? '' :
     '<div class="day-actions">'+
       '<button class="btn '+(done?'done':'primary')+'" id="markDoneBtn">'+(done?'Concluído ✓':'Marcar como concluído')+'</button>'+
       '<button class="btn" id="copyPromptBtn" title="Copia a mensagem para colar no chat da mentoria">Copiar prompt do dia</button>'+
     '</div>';
-  $('markDoneBtn').addEventListener('click', toggleDone);
-  $('copyPromptBtn').addEventListener('click', copyPrompt);
+  card.innerHTML =
+    '<div class="day-head"><span class="chip phase">Fase '+e.phase+': '+esc(ph.full)+'</span><span class="chip fmt">'+fmt+'</span></div>'+
+    '<h3>'+esc(title)+'</h3>'+ body + actions;
+  if(!pause){
+    $('markDoneBtn').addEventListener('click', toggleDone);
+    $('copyPromptBtn').addEventListener('click', copyPrompt);
+  }
   $('noteInput').value = notesMap[e.date] || '';
   updateNoteMeta();
 }
@@ -700,7 +729,7 @@ function renderFunnel(){
   const d = currentDate;
   let html = '';
   if(d < FUNNEL_START){
-    box.innerHTML = '<p class="hint" style="margin-top:0">As candidaturas começam em 02/11. A partir desse dia, registre aqui o que enviou, as respostas e as entrevistas de cada dia, e a semana aparece somada com um gráfico das últimas 8 semanas.</p>';
+    box.innerHTML = '<p class="hint" style="margin-top:0">As candidaturas começam em 09/11. A partir desse dia, registre aqui o que enviou, as respostas e as entrevistas de cada dia, e a semana aparece somada com um gráfico das últimas 8 semanas.</p>';
     return;
   } else if(DATA_MAP[d]){
     const v = pipelineMap[d] || {};
@@ -808,6 +837,7 @@ function renderCalendar(){
       if(!e){ cells += '<button class="cell out" disabled tabindex="-1">'+d+'</button>'; continue; }
       const cls = ['cell','in'];
       if(doneMap[iso]) cls.push('ok');
+      if(isPause(iso)) cls.push('pause');
       if(iso===t) cls.push('today');
       if(iso===currentDate) cls.push('sel');
       if(notesMap[iso] && notesMap[iso].trim()) cls.push('has-note');
@@ -821,7 +851,7 @@ function renderCalendar(){
   $('months').innerHTML = html;
   $('months').querySelectorAll('button[data-d]').forEach(b=>b.addEventListener('click',()=>{ go(b.dataset.d); window.scrollTo({top:0,behavior:'smooth'}); }));
   $('legend').innerHTML = Object.keys(PHASES).map(p=>'<span><i style="background:'+PHASES[p].color+'"></i>'+esc(PHASES[p].name)+'</span>').join('')+
-    '<span>Cor cheia: concluído</span><span>Cor clara: pendente</span><span>Ponto amarelo: tem anotação</span>';
+    '<span>Cor cheia: concluído</span><span>Cor clara: pendente</span><span>Tracejado: pausa (não conta)</span><span>Ponto amarelo: tem anotação</span>';
 }
 
 /* ---------- navigation ---------- */
